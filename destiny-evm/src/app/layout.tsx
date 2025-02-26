@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Navigation } from "@/components/layout/Navigation";
 import { ChainNavigation } from "@/components/layout/ChainNavigation";
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,10 +30,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <Navigation />
-          <ChainNavigation />
+          {/* <ChainNavigation /> */}
           {children}
         </Providers>
+        {/* <Toaster /> */}
       </body>
     </html>
   );

@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 const gamesOracle = [
-  { pair: 'ALPH/USD', page: '/alph-usd', mobilePair: 'ALPH/USD' },
+  // { pair: 'ALPH/USD', page: '/alph-usd', mobilePair: 'ALPH/USD' },
   { pair: 'BTC/USD', page: '/btc-usd', mobilePair: 'BTC/USD' },
   { pair: 'ETH/USD', page: '/eth-usd', mobilePair: 'ETH/USD' }
 ];
