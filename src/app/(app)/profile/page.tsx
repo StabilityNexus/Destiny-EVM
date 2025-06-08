@@ -1,9 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useMetamaskStore } from '@/store/metamaskStore';
-import { useProfileStore } from '@/store/profileStore';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { useMetamaskStore } from "@/store/walletStore";
+import { useProfileStore } from "@/store/profileStore";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Timer, Rocket } from "lucide-react";
@@ -16,14 +22,16 @@ export default function ProfilePage() {
   const formatDetailedCountdown = (deadline: Date) => {
     const now = new Date().getTime();
     const timeLeft = deadline.getTime() - now;
-    
-    if (timeLeft <= 0) return 'Closed';
-    
+
+    if (timeLeft <= 0) return "Closed";
+
     const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const hours = Math.floor(
+      (timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    );
     const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-    
+
     return `${days}d ${hours}h ${minutes}m ${seconds}s`;
   };
 
@@ -50,7 +58,9 @@ export default function ProfilePage() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#F9F6E6]">
         <Card className="w-[90%] max-w-md bg-white/80 backdrop-blur-sm shadow-xl">
           <CardHeader>
-            <CardTitle className="text-2xl text-center">Wallet Not Connected</CardTitle>
+            <CardTitle className="text-2xl text-center">
+              Wallet Not Connected
+            </CardTitle>
             <CardDescription className="text-center">
               Please connect your wallet to view your profile
             </CardDescription>
@@ -72,7 +82,10 @@ export default function ProfilePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {games.map((game) => (
-            <Card key={game.id} className="bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all">
+            <Card
+              key={game.id}
+              className="bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all"
+            >
               <CardHeader>
                 <CardTitle className="text-xl text-center">
                   Prediction Game #{game.id}
@@ -83,18 +96,22 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <Progress 
-                    value={parseFloat(game.bullCirculatingSupply)} 
+                  <Progress
+                    value={parseFloat(game.bullCirculatingSupply)}
                     className="h-2 bg-[#BAD8B6]"
                   />
                   <div className="flex justify-between text-sm">
-                    <span className="text-green-600">Bulls: {game.bullCirculatingSupply}%</span>
-                    <span className="text-red-600">Bears: {game.bearCirculatingSupply}%</span>
+                    <span className="text-green-600">
+                      Bulls: {game.bullCirculatingSupply}%
+                    </span>
+                    <span className="text-red-600">
+                      Bears: {game.bearCirculatingSupply}%
+                    </span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between mt-4 text-sm">
                     <Timer className="h-4 w-4" />
-                    <span>{countdowns[game.id] || 'Loading...'}</span>
+                    <span>{countdowns[game.id] || "Loading..."}</span>
                   </div>
 
                   {game.isInitialized ? (

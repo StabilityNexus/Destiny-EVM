@@ -1,19 +1,6 @@
+import { MetamaskState } from '@/types/wallet';
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
-}
-
-interface MetamaskState {
-  isConnected: boolean;
-  account: string | null;
-  chainId: string | null;
-  connect: () => Promise<void>;
-  disconnect: () => void;
-}
 
 export const useMetamaskStore = create<MetamaskState>()(
   devtools(

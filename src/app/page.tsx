@@ -1,7 +1,7 @@
 "use client";
 
 import { Navigation } from "@/components/layout/Navigation";
-import { useMetamaskStore } from "@/store/metamaskStore";
+import { useMetamaskStore } from "@/store/walletStore";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
@@ -21,7 +21,7 @@ export default function Home() {
           Create prediction games and earn rewards!
         </h2>
         <button
-          onClick={() => router.push("/trading")}
+          onClick={() => router.push("/app")}
           className="bg-blue-500 text-white px-8 py-3 rounded-md hover:bg-blue-600 transition-all transform hover:scale-105 animate-fade-in"
         >
           Access dApp

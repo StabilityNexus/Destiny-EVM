@@ -1,8 +1,13 @@
 "use client";
 
 import { ChainNavigation } from "@/components/layout/ChainNavigation";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMetamaskStore } from "@/store/metamaskStore";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useMetamaskStore } from "@/store/walletStore";
 
 export default function Layout({
   children,

@@ -1,26 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-
-interface Game {
-  id: string;
-  isAbove: string;
-  feed: string;
-  bullCirculatingSupply: string;
-  bearCirculatingSupply: string;
-  deadline: string;
-  isInitialized: boolean;
-  baseAmountBull: string;
-  baseAmountBear: string;
-  start: string;
-  contract: string;
-}
-
-interface ProfileState {
-  games: Game[];
-  isLoading: boolean;
-  fetchGames: (address: string) => Promise<void>;
-  fetchGamesByPair: (pair: string) => Promise<void>;
-}
+import { ProfileState } from '@/types/profile';
 
 export const useProfileStore = create<ProfileState>()(
   devtools(

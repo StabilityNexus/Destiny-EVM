@@ -1,49 +1,8 @@
+import { GameState } from '@/types/game';
 import { create } from 'zustand';
 
 type FilterType = 'default' | 'bytimeup' | 'bytimedown' | 'byfeeup' | 'byfeedown' | 'byfinished';
 
-interface Position {
-  bullCoins: number;
-  bearCoins: number;
-  totalAssets: number;
-}
-
-interface Game {
-  id: string;
-  pair: string;
-  isAbove: string;
-  feed: string;
-  deadline: string;
-  bullCirculatingSupply: string;
-  bearCirculatingSupply: string;
-  isInitialized: boolean;
-  baseAmountBull: string;
-  baseAmountBear: string;
-  start: string;
-  contract: string;
-  creator: string;
-}
-
-interface Transaction {
-  wallet: string;
-  tx: string;
-  type: 'MINT' | 'INITIALIZE' | 'BURN';
-  token: 'BULL' | 'BEAR' | '-';
-  amount: number;
-  createdAt: string;
-}
-
-interface GameState {
-  filter: FilterType;
-  currentGame: Game | null;
-  userPosition: Position | null;
-  transactions: Transaction[];
-  setFilter: (filter: FilterType) => void;
-  setCurrentGame: (game: Game | null) => void;
-  setUserPosition: (position: Position | null) => void;
-  filterGames: (games: Game[]) => Game[];
-  fetchGameById: (id: string) => Promise<void>;
-}
 
 export const useGameStore = create<GameState>((set, get) => ({
   filter: 'default',
@@ -111,7 +70,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           userPosition: {
             bullCoins: 10.00,
             bearCoins: 15.00,
-          totalAssets: 25.00
+            totalAssets: 25.00
           },
           transactions: [
             {

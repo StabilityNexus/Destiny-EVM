@@ -23,7 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "react-hot-toast";
-import { useMetamaskStore } from "@/store/metamaskStore";
+import { useMetamaskStore } from "@/store/walletStore";
 import {
   LoaderCircle,
   Check,

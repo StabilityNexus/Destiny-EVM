@@ -7,7 +7,7 @@ import { GameNavigation } from "@/components/game/GameNavigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGameStore } from "@/store/gameStore";
 import { useProfileStore } from "@/store/profileStore";
-import { useMetamaskStore } from "@/store/metamaskStore";
+import { useMetamaskStore } from "@/store/walletStore";
 
 export default function AppPage() {
   const [isLoading, setIsLoading] = useState(true);

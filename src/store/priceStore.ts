@@ -1,10 +1,5 @@
+import { PriceState } from '@/types/price';
 import { create } from 'zustand';
-
-interface PriceState {
-  btcPrice: number | null;
-  ethPrice: number | null;
-  fetchPrices: () => Promise<void>;
-}
 
 export const usePriceStore = create<PriceState>()((set) => ({
   btcPrice: null,
