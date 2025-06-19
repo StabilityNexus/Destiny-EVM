@@ -1,4 +1,4 @@
-import { createPublicClient, http } from 'viem';
+import { createPublicClient, http, PublicClient } from 'viem';
 import { sepolia, goerli, mainnet, polygon } from 'viem/chains';
 import { RPC_URLS, DEFAULT_CHAIN } from '@/config';
 
@@ -17,4 +17,4 @@ export const publicClients = {
   }),
 };
 
-export const getPublicClient = publicClients[DEFAULT_CHAIN];
+export const getPublicClient: PublicClient = publicClients[DEFAULT_CHAIN];
