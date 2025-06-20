@@ -1,36 +1,26 @@
-import { MetamaskState } from '@/types/wallet';
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+'use client';
 
-export const useMetamaskStore = create<MetamaskState>()(
-  devtools(
-    persist(
-      (set) => ({
-        isConnected: false,
-        account: null,
-        chainId: null,
-        connect: async () => {
-          if (typeof window !== 'undefined' && window.ethereum) {
-            try {
-              const accounts = await window.ethereum.request({
-                method: 'eth_requestAccounts',
-              });
-              const chainId = await window.ethereum.request({
-                method: 'eth_chainId',
-              });
-              set({ isConnected: true, account: accounts[0], chainId });
-            } catch (error) {
-              console.error('Error connecting to MetaMask:', error);
-            }
-          }
-        },
-        disconnect: () => {
-          set({ isConnected: false, account: null, chainId: null });
-        },
-      }),
-      {
-        name: 'metamask-storage',
-      }
-    )
-  )
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+import type { Address } from 'viem';
+
+// You can customize this type if you want more in the future
+type WalletState = {
+  isConnected: boolean;
+  address: Address | null;
+  chainId: number | null;
+  setConnection: (isConnected: boolean) => void;
+  setAddress: (address: Address | null) => void;
+  setChainId: (chainId: number | null) => void;
+};
+
+export const useWalletStore = create<WalletState>()(
+  devtools((set) => ({
+    isConnected: false,
+    address: null,
+    chainId: null,
+    setConnection: (isConnected) => set({ isConnected }),
+    setAddress: (address) => set({ address }),
+    setChainId: (chainId) => set({ chainId }),
+  }))
 );

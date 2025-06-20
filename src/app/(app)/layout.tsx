@@ -1,18 +1,23 @@
 "use client";
 
 import { ChainNavigation } from "@/components/layout/ChainNavigation";
+import { Navigation } from "@/components/layout/Navigation";
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useMetamaskStore } from "@/store/walletStore";
+import { useSyncWallet } from "@/hooks/useSyncWallet";
+import { useWalletStore } from "@/store/walletStore";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 export default function Layout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const { isConnected, account } = useMetamaskStore();
+  const { isConnected } = useWalletStore();
+  useSyncWallet();
+
   if (!isConnected) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#F9F6E6]">
@@ -24,17 +29,20 @@ export default function Layout({
             <CardDescription className="text-center">
               Please connect your wallet to view your profile
             </CardDescription>
+
+            <div className="mt-6 flex justify-center">
+              <ConnectButton showBalance={false} />
+            </div>
           </CardHeader>
         </Card>
       </div>
     );
   }
+
   return (
-    <html lang="en">
-      <body>
-        <ChainNavigation />
-        {children}
-      </body>
-    </html>
+    <div>
+      <Navigation />
+      {children}
+    </div>
   );
 }

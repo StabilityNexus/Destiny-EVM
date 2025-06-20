@@ -11,12 +11,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { CreateGameModal } from "./CreateGameModal";
-import { useMetamaskStore } from "@/store/walletStore";
+import { useWalletStore } from "@/store/walletStore";
 import toast from "react-hot-toast";
 
 export function GameNavigation() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { isConnected } = useMetamaskStore();
+  const { isConnected } = useWalletStore();
 
   const handleCreateClick = () => {
     if (!isConnected) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useMetamaskStore } from "@/store/walletStore";
+import { useWalletStore } from "@/store/walletStore";
 import { useProfileStore } from "@/store/profileStore";
 import {
   Card,
@@ -12,10 +12,12 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Timer, Rocket } from "lucide-react";
+import { Timer, Rocket, Copy, ExternalLink } from "lucide-react";
+import toast from "react-hot-toast";
+import copy from "copy-to-clipboard";
 
 export default function ProfilePage() {
-  const { isConnected, account } = useMetamaskStore();
+  const { isConnected, address, setAddress } = useWalletStore();
   const { games, isLoading, fetchGames } = useProfileStore();
   const [countdowns, setCountdowns] = useState<Record<string, string>>({});
 
@@ -36,9 +38,10 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    if (!isConnected || !account) return;
-    fetchGames(account);
-  }, [isConnected, account, fetchGames]);
+    if (!isConnected || !address) return;
+    fetchGames(address);
+    setAddress(address);
+  }, [isConnected, address, fetchGames]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -53,9 +56,14 @@ export default function ProfilePage() {
     return () => clearInterval(interval);
   }, [games]);
 
+  const handleCopy = () => {
+    copy(address as string);
+    toast.success("Address copied!");
+  };
+
   if (!isConnected) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#F9F6E6]">
+      <div className="flex flex-col items-center justify-center min-h-screen">
         <Card className="w-[90%] max-w-md bg-white/80 backdrop-blur-sm shadow-xl">
           <CardHeader>
             <CardTitle className="text-2xl text-center">
@@ -74,9 +82,19 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-[#F9F6E6] p-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Profile</h1>
-          <div className="inline-block px-4 py-2 bg-white rounded-lg shadow-md">
-            <p className="text-sm font-mono">{account}</p>
+          <h1 className="text-4xl font-extrabold mb-4">Your Profile</h1>
+          <div className="inline-flex items-center gap-3 px-4 py-2 bg-white rounded-full shadow-md font-mono text-sm transition-all hover:scale-105">
+            <span>{address}</span>
+            <button onClick={handleCopy}>
+              <Copy className="w-4 h-4" />
+            </button>
+            <a
+              href={`https://sepolia.etherscan.io/address/${address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
           </div>
         </div>
 
