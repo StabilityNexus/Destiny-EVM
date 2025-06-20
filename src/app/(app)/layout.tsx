@@ -9,6 +9,13 @@ import {
 } from "@/components/ui/card";
 import { useMetamaskStore } from "@/store/walletStore";
 
+/**
+ * Provides a layout for pages that conditionally renders content based on wallet connection status.
+ *
+ * If the user's wallet is not connected, displays a prompt to connect the wallet. Otherwise, renders navigation and the provided child components.
+ *
+ * @param children - The content to display within the layout when the wallet is connected
+ */
 export default function Layout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {

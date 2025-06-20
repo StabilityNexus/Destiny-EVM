@@ -9,6 +9,11 @@ import { useGameStore } from "@/store/gameStore";
 import { useProfileStore } from "@/store/profileStore";
 import { useMetamaskStore } from "@/store/walletStore";
 
+/**
+ * Displays the main game interface, loading user-specific game data before rendering navigation and game feed components.
+ *
+ * Shows a loading indicator while fetching games for the connected account, then renders the game navigation and feed once loading is complete.
+ */
 export default function AppPage() {
   const [isLoading, setIsLoading] = useState(true);
   const { fetchGamesByPair, fetchGames } = useProfileStore();

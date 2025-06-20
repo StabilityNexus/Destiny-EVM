@@ -4,6 +4,11 @@ import { Navigation } from "@/components/layout/Navigation";
 import { useMetamaskStore } from "@/store/walletStore";
 import { useRouter } from "next/navigation";
 
+/**
+ * Renders the home page with a navigation bar, introductory headings, and a button to access the dApp.
+ *
+ * Displays a visually styled landing screen with a call-to-action button that navigates users to the main application.
+ */
 export default function Home() {
   const router = useRouter();
   const { isConnected } = useMetamaskStore();

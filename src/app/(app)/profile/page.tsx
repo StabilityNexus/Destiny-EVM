@@ -14,6 +14,11 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Timer, Rocket } from "lucide-react";
 
+/**
+ * Displays the user's profile page with their prediction games, integrating wallet connection and live game data.
+ *
+ * Renders a profile view that shows the connected wallet address and a list of prediction games, including real-time countdowns, progress bars, and action buttons. Prompts the user to connect their wallet if not already connected.
+ */
 export default function ProfilePage() {
   const { isConnected, account } = useMetamaskStore();
   const { games, isLoading, fetchGames } = useProfileStore();

@@ -14,6 +14,11 @@ import { CreateGameModal } from "./CreateGameModal";
 import { useMetamaskStore } from "@/store/walletStore";
 import toast from "react-hot-toast";
 
+/**
+ * Renders the navigation controls for prediction games, including filtering options and a button to create a new game.
+ *
+ * Displays a dropdown for filtering games by various criteria and a button to open the game creation modal. If the user is not connected to a wallet, attempting to create a game will show an error notification.
+ */
 export function GameNavigation() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { isConnected } = useMetamaskStore();
