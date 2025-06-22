@@ -3,7 +3,11 @@
 import { Navigation } from "@/components/layout/Navigation";
 import { useWalletStore } from "@/store/walletStore";
 import { useRouter } from "next/navigation";
-import { Sparkles } from "lucide-react"; // Optional: for sparkle icon on CTA
+import { Sparkles } from "lucide-react"; /**
+ * Renders the landing page for the dApp, featuring a hero section with a slogan, description, call-to-action button, and trust badges.
+ *
+ * The page includes decorative backgrounds and responsive styling, and allows users to navigate to the main application via the "Access dApp" button.
+ */
 
 export default function Home() {
   const router = useRouter();

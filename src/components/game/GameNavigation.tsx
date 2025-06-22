@@ -14,6 +14,11 @@ import { CreateGameModal } from "./CreateGameModal";
 import { useWalletStore } from "@/store/walletStore";
 import toast from "react-hot-toast";
 
+/**
+ * Renders navigation controls for filtering and creating prediction games.
+ *
+ * Displays a filter dropdown and a button to open the game creation modal. If the user is not connected to a wallet, attempting to create a game will show an error notification.
+ */
 export function GameNavigation() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { isConnected } = useWalletStore();

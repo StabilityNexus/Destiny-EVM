@@ -44,7 +44,14 @@ import {
 import { useForm } from "react-hook-form";
 import { TimePickerDemo } from "../time/time-date-picker";
 import { useWalletClient } from "wagmi";
-// import { TimeField, TimeValue } from "@/components/ui/time-field";
+/**
+ * Displays a modal dialog for creating a new prediction game.
+ *
+ * Allows users to input game parameters, agree to terms, and submit a request to create a prediction game. Handles form validation, wallet connection checks, and displays feedback for loading, success, or error states.
+ *
+ * @param isOpen - Whether the modal is visible
+ * @param onClose - Callback to close the modal
+ */
 
 export function CreateGameModal({
   isOpen,

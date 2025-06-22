@@ -16,6 +16,11 @@ import { Timer, Rocket, Copy, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
 import copy from "copy-to-clipboard";
 
+/**
+ * Displays the user's profile page with their connected wallet address and a list of prediction games.
+ *
+ * Renders wallet connection status, allows copying the wallet address, and provides links to Etherscan. Shows each prediction game's details, including target price, bull/bear percentages, and a live countdown timer. Handles loading and empty states for the games list.
+ */
 export default function ProfilePage() {
   const { isConnected, address, setAddress } = useWalletStore();
   const { games, isLoading, fetchGames } = useProfileStore();
