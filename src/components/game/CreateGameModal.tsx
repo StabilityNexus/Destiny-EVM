@@ -23,7 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "react-hot-toast";
-import { useMetamaskStore } from "@/store/metamaskStore";
+import { useWalletStore } from "@/store/walletStore";
 import {
   LoaderCircle,
   Check,
@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { TimePickerDemo } from "../time/time-date-picker";
+import { useWalletClient } from "wagmi";
 // import { TimeField, TimeValue } from "@/components/ui/time-field";
 
 export function CreateGameModal({
@@ -55,7 +56,7 @@ export function CreateGameModal({
   const [isCreating, setIsCreating] = useState(false);
   const [txHash, setTxHash] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
-  const { account } = useMetamaskStore();
+  const { address, isConnected } = useWalletStore();
   const router = useRouter();
 
   const form = useForm({
@@ -69,7 +70,7 @@ export function CreateGameModal({
   });
 
   const handleCreateGame = async (values: any) => {
-    if (!account) {
+    if (!isConnected) {
       toast.error("Please connect your wallet first");
       return;
     }
@@ -93,7 +94,7 @@ export function CreateGameModal({
           pair: values.pair,
           targetValue: parseFloat(values.targetValue),
           deadline: selectedDateTime.getTime(),
-          creator: account,
+          creator: address,
           creatorFee: parseFloat(values.creatorFee),
         }),
       });

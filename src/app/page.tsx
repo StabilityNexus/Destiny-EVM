@@ -1,31 +1,54 @@
 "use client";
 
 import { Navigation } from "@/components/layout/Navigation";
-import { useMetamaskStore } from "@/store/metamaskStore";
+import { useWalletStore } from "@/store/walletStore";
 import { useRouter } from "next/navigation";
+import { Sparkles } from "lucide-react"; // Optional: for sparkle icon on CTA
 
 export default function Home() {
   const router = useRouter();
-  const { isConnected } = useMetamaskStore();
+  const { isConnected } = useWalletStore();
 
   return (
-    <div>
+    <div className="relative min-h-screen bg-[#FDFCF5] text-black">
       <Navigation />
-      <div className="flex flex-col items-center justify-center min-h-screen text-center px-4 pt-24">
-        <div className="fixed inset-0 z-[-1] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
 
-        <h1 className="text-6xl font-bold mb-4 animate-fade-in">
-          Predict your way up!
+      {/* Decorative Background */}
+      <div className="fixed inset-0 z-[-1] bg-[radial-gradient(circle_at_1px_1px,#EAEAEA_1px,transparent_0)] [background-size:20px_20px] opacity-40" />
+
+      {/* Hero Section */}
+      <div className="flex flex-col items-center justify-center text-center px-4 pt-32 sm:pt-36 space-y-6 animate-fade-in">
+        <h1 className="text-5xl sm:text-6xl font-extrabold leading-tight tracking-tight">
+          <span className="bg-[#BAD8B6] px-4 py-2 rounded-xl shadow-sm inline-block animate-pop">
+            Predict your way up!
+          </span>
         </h1>
-        <h2 className="text-xl font-bold mb-8 animate-fade-in">
-          Create prediction games and earn rewards!
+
+        <h2 className="text-lg sm:text-xl font-medium text-gray-700">
+          Create prediction games. Compete. Earn rewards.
         </h2>
+
+        {/* Access dApp Button */}
         <button
-          onClick={() => router.push("/trading")}
-          className="bg-blue-500 text-white px-8 py-3 rounded-md hover:bg-blue-600 transition-all transform hover:scale-105 animate-fade-in"
+          onClick={() => router.push("/app")}
+          className="mt-6 bg-[#9DC88E] text-black px-6 py-3 rounded-full text-lg font-semibold shadow-md hover:bg-[#7BB56A] hover:shadow-lg transition-all duration-300 flex items-center gap-2 group"
         >
+          <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
           Access dApp
         </button>
+
+        {/* Optional Trust Badges */}
+        <div className="mt-10 flex flex-wrap gap-4 justify-center opacity-80 text-sm">
+          <span className="px-3 py-1 bg-white rounded-full border shadow-sm">
+            Powered by Chainlink
+          </span>
+          <span className="px-3 py-1 bg-white rounded-full border shadow-sm">
+            On Sepolia Testnet
+          </span>
+          <span className="px-3 py-1 bg-white rounded-full border shadow-sm">
+            Gas-free ⚡
+          </span>
+        </div>
       </div>
     </div>
   );

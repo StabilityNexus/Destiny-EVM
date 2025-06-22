@@ -1,15 +1,24 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useMetamaskStore } from '@/store/metamaskStore';
+import { WagmiProvider } from "wagmi";
+import { config } from "@/lib/walletConfig";
+import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { sepolia } from "viem/chains";
+import { useSyncWallet } from "@/hooks/useSyncWallet";
+import { Toaster } from "react-hot-toast";
+
+const queryClient = new QueryClient();
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const { connect } = useMetamaskStore();
-
-//   useEffect(() => {
-//     // Try to connect to MetaMask on initial load if previously connected
-//     connect();
-//   }, [connect]);
-
-  return <>{children}</>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <WagmiProvider config={config}>
+        <RainbowKitProvider initialChain={sepolia}>
+          {children}
+          <Toaster />
+        </RainbowKitProvider>
+      </WagmiProvider>
+    </QueryClientProvider>
+  );
 }

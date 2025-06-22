@@ -1,16 +1,22 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { CreateGameModal } from './CreateGameModal';
-import { useMetamaskStore } from '@/store/metamaskStore';
-import toast from 'react-hot-toast';
+import { CreateGameModal } from "./CreateGameModal";
+import { useWalletStore } from "@/store/walletStore";
+import toast from "react-hot-toast";
 
 export function GameNavigation() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { isConnected } = useMetamaskStore();
+  const { isConnected } = useWalletStore();
 
   const handleCreateClick = () => {
     if (!isConnected) {
@@ -42,7 +48,7 @@ export function GameNavigation() {
           </SelectContent>
         </Select>
 
-        <Button 
+        <Button
           onClick={handleCreateClick}
           className="bg-[#BAD8B6] hover:bg-[#9DC88E] text-black"
         >
@@ -51,7 +57,7 @@ export function GameNavigation() {
         </Button>
       </div>
 
-      <CreateGameModal 
+      <CreateGameModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
