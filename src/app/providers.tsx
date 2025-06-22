@@ -10,6 +10,13 @@ import { Toaster } from "react-hot-toast";
 
 const queryClient = new QueryClient();
 
+/**
+ * Wraps child components with context providers for React Query, wallet management, blockchain interaction, and toast notifications.
+ *
+ * Renders the provided children within a hierarchy of providers, enabling query caching, wallet connectivity, blockchain selection, and toast support throughout the component tree.
+ *
+ * @param children - The React elements to be rendered within the provider context
+ */
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
