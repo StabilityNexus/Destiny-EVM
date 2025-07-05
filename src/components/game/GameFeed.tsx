@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Timer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Pagination } from '@/components/ui/pagination';
-import { useGameStore } from '@/store/gameStore';
 import { useProfileStore } from '@/store/profileStore';
 
 export function GameFeed() {
@@ -17,7 +16,7 @@ export function GameFeed() {
   const perPage = 12;
 
   const { games, isLoading } = useProfileStore();
-  const { filterGames } = useGameStore();
+  // const { filterGames } = useGameStore();
   const filteredGames = filterGames(games);
 
   const formatDetailedCountdown = (deadline: Date) => {

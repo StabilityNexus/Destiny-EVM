@@ -5,7 +5,6 @@ import { ChainNavigation } from "@/components/layout/ChainNavigation";
 import { GameFeed } from "@/components/game/GameFeed";
 import { GameNavigation } from "@/components/game/GameNavigation";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGameStore } from "@/store/gameStore";
 import { useProfileStore } from "@/store/profileStore";
 import { useWalletStore } from "@/store/walletStore";
 
@@ -17,7 +16,6 @@ import { useWalletStore } from "@/store/walletStore";
 export default function AppPage() {
   const [isLoading, setIsLoading] = useState(true);
   const { fetchGamesByPair, fetchGames } = useProfileStore();
-  const { filter, setFilter } = useGameStore();
   const { address, isConnected } = useWalletStore();
 
   useEffect(() => {
