@@ -1,5 +1,5 @@
 export const CONTRACT_ADDRESSES = {
   sepolia: {
-    factory: '0xeea71F3809145755E0eBaFb687C02b8c05c72d4B'
+    factory: '0x27F0445e9A28eeF757d132f5257dd994Ff06fB54'
   },
 };

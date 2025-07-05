@@ -11,6 +11,18 @@ body {
   min-height: 100vh;
 }
 
+.input {
+  @apply w-full border p-2 rounded;
+}
+
+.btn-green {
+  @apply w-full bg-[#9DC88E] text-black py-2 rounded font-semibold hover:bg-[#7BB56A] transition-all;
+}
+
+.btn-light {
+  @apply px-3 py-1 bg-gray-100 rounded text-sm hover:bg-gray-200 transition;
+}
+
 .hover-scale {
   transition: transform 0.2s ease-in-out;
 }
