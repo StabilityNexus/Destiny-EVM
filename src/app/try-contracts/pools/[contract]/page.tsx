@@ -4,7 +4,11 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 import toast from "react-hot-toast";
-import { usePoolMetadata, useGetUserShares, usePoolWrites } from "@/lib/web3/pool";
+import {
+  usePoolMetadata,
+  useGetUserShares,
+  usePoolWrites,
+} from "@/lib/web3/pool";
 
 export default function PoolDetailPage() {
   const { contract } = useParams() as { contract: `0x${string}` };
@@ -14,13 +18,16 @@ export default function PoolDetailPage() {
 
   const { metadata } = usePoolMetadata(contract);
   const { bullShares, bearShares } = useGetUserShares(contract, user || "");
-  const { mint, burn, takeSnapshot, claim, withdrawCreatorFee } = usePoolWrites(contract);
+  const { mint, burn, takeSnapshot, claim, withdrawCreatorFee } =
+    usePoolWrites(contract);
 
-  const { isLoading, isSuccess, isError, error } = useWaitForTransactionReceipt({
-    hash: txHash ?? undefined,
-    chainId: 11155111,
-    confirmations: 1,
-  });
+  const { isLoading, isSuccess, isError, error } = useWaitForTransactionReceipt(
+    {
+      hash: txHash ?? undefined,
+      chainId: 11155111,
+      confirmations: 1,
+    }
+  );
 
   const handle = async (fn: () => Promise<`0x${string}`>, label: string) => {
     try {
@@ -52,37 +59,107 @@ export default function PoolDetailPage() {
         <h2 className="text-3xl font-bold break-all">📍 Pool: {contract}</h2>
 
         <div className="bg-white rounded-xl shadow p-4 space-y-2">
-          <p><strong>Token Pair:</strong> {metadata?.tokenPair ? String(metadata.tokenPair) : ""}</p>
-          <p><strong>Target Price:</strong> {metadata?.targetPrice?.toString()}</p>
-          <p><strong>Expiry:</strong> {metadata?.expiry ? new Date(Number(metadata.expiry) * 1000).toLocaleString() : "N/A"}</p>
-          <p><strong>Creator Fee:</strong> {Number(metadata?.creatorFee || 0) / 100}%</p>
+          <p>
+            <strong>Token Pair:</strong>{" "}
+            {metadata?.tokenPair ? String(metadata.tokenPair) : ""}
+          </p>
+          <p>
+            <strong>Target Price:</strong> {metadata?.targetPrice?.toString()}
+          </p>
+          <p>
+            <strong>Expiry:</strong>{" "}
+            {metadata?.expiry
+              ? `${new Date(Number(metadata.expiry) * 1000).toLocaleString()}`
+              : "N/A"}
+            {metadata?.expiry &&
+            Number(metadata.expiry) < Math.floor(Date.now() / 1000) ? (
+              <span className="text-red-600 font-semibold ml-2">
+                ⏰ Expired
+              </span>
+            ) : null}
+          </p>
+          <p>
+            <strong>Creator Fee:</strong>{" "}
+            {Number(metadata?.creatorFee || 0) / 100}%
+          </p>
         </div>
 
         <div className="space-y-3">
-          <input className="input" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount in ETH" />
+          <input
+            className="input"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Amount in ETH"
+          />
           <div className="grid grid-cols-2 gap-3">
-            <button className="btn-green" onClick={() => handle(() => mint("BULL", amount), "Minting BULL")}>Mint BULL</button>
-            <button className="btn-green" onClick={() => handle(() => mint("BEAR", amount), "Minting BEAR")}>Mint BEAR</button>
-            <button className="btn-blue" onClick={() => handle(() => burn("BULL", amount), "Burning BULL")}>Burn BULL</button>
-            <button className="btn-blue" onClick={() => handle(() => burn("BEAR", amount), "Burning BEAR")}>Burn BEAR</button>
+            <button
+              className="btn-green"
+              onClick={() => handle(() => mint("BULL", amount), "Minting BULL")}
+            >
+              Mint BULL
+            </button>
+            <button
+              className="btn-green"
+              onClick={() => handle(() => mint("BEAR", amount), "Minting BEAR")}
+            >
+              Mint BEAR
+            </button>
+            <button
+              className="btn-blue"
+              onClick={() => handle(() => burn("BULL", amount), "Burning BULL")}
+            >
+              Burn BULL
+            </button>
+            <button
+              className="btn-blue"
+              onClick={() => handle(() => burn("BEAR", amount), "Burning BEAR")}
+            >
+              Burn BEAR
+            </button>
           </div>
-          <button className="btn-purple w-full" onClick={() => handle(takeSnapshot, "Taking snapshot")}>Take Snapshot</button>
-          <button className="btn-yellow w-full" onClick={() => handle(claim, "Claiming rewards")}>Claim Rewards</button>
-          <button className="btn-dark w-full" onClick={() => handle(withdrawCreatorFee, "Withdrawing fee")}>Withdraw Creator Fee</button>
+          <button
+            className="btn-purple w-full"
+            onClick={() => handle(takeSnapshot, "Taking snapshot")}
+          >
+            Take Snapshot
+          </button>
+          <button
+            className="btn-yellow w-full"
+            onClick={() => handle(claim, "Claiming rewards")}
+          >
+            Claim Rewards
+          </button>
+          <button
+            className="btn-dark w-full"
+            onClick={() => handle(withdrawCreatorFee, "Withdrawing fee")}
+          >
+            Withdraw Creator Fee
+          </button>
         </div>
 
         <div className="text-sm space-y-1">
-          {typeof bullShares === "bigint" || typeof bullShares === "number" || typeof bullShares === "string"
-            ? <p>🐂 Your BULL: {Number(bullShares) / 1e18} ETH</p>
-            : null}
-          {(typeof bearShares === "bigint" || typeof bearShares === "number" || typeof bearShares === "string") && (
+          {typeof bullShares === "bigint" ||
+          typeof bullShares === "number" ||
+          typeof bullShares === "string" ? (
+            <p>🐂 Your BULL: {Number(bullShares) / 1e18} ETH</p>
+          ) : null}
+          {(typeof bearShares === "bigint" ||
+            typeof bearShares === "number" ||
+            typeof bearShares === "string") && (
             <p>🐻 Your BEAR: {Number(bearShares) / 1e18} ETH</p>
           )}
         </div>
 
         {txHash && (
           <p className="text-xs text-gray-600">
-            Pending tx: <a href={`https://sepolia.etherscan.io/tx/${txHash}`} className="underline text-blue-600" target="_blank">{txHash}</a>
+            Pending tx:{" "}
+            <a
+              href={`https://sepolia.etherscan.io/tx/${txHash}`}
+              className="underline text-blue-600"
+              target="_blank"
+            >
+              {txHash}
+            </a>
           </p>
         )}
       </div>

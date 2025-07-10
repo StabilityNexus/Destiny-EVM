@@ -25,11 +25,13 @@ export default function FactoryTryPage() {
   const { feedAddress: currentFeed } = useGetPriceFeed(tokenPair);
   const { allPools } = useAllPools();
 
-  const { isLoading, isSuccess, isError, error } = useWaitForTransactionReceipt({
-    hash: txHash ?? undefined,
-    chainId: 11155111,
-    confirmations: 1,
-  });
+  const { isLoading, isSuccess, isError, error } = useWaitForTransactionReceipt(
+    {
+      hash: txHash ?? undefined,
+      chainId: 11155111,
+      confirmations: 1,
+    }
+  );
 
   useEffect(() => {
     if (isSuccess) {
@@ -45,7 +47,10 @@ export default function FactoryTryPage() {
     }
   }, [isError, error]);
 
-  const handleTx = async (callback: () => Promise<`0x${string}`>, label: string) => {
+  const handleTx = async (
+    callback: () => Promise<`0x${string}`>,
+    label: string
+  ) => {
     try {
       toast.loading(`${label}...`);
       const hash = await callback();
@@ -58,9 +63,9 @@ export default function FactoryTryPage() {
     }
   };
 
-  const setRelativeExpiry = (days: number) => {
+  const setRelativeExpiry = (seconds: number) => {
     const now = Math.floor(Date.now() / 1000);
-    const future = now + days * 24 * 60 * 60;
+    const future = now + seconds;
     setExpiry(future.toString());
   };
 
@@ -69,7 +74,9 @@ export default function FactoryTryPage() {
       <div className="fixed inset-0 z-[-1] bg-[radial-gradient(circle_at_1px_1px,#EAEAEA_1px,transparent_0)] [background-size:20px_20px] opacity-30" />
 
       <div className="max-w-2xl mx-auto space-y-10">
-        <h1 className="text-4xl font-extrabold text-center">⚙️ Factory Playground</h1>
+        <h1 className="text-4xl font-extrabold text-center">
+          ⚙️ Factory Playground
+        </h1>
 
         {/* Set Price Feed */}
         <section className="bg-white rounded-xl p-6 shadow space-y-3">
@@ -89,14 +96,18 @@ export default function FactoryTryPage() {
           <button
             className="btn-green"
             onClick={() =>
-              handleTx(() => setPriceFeed(tokenPair, feedAddress as `0x${string}`), "Setting feed")
+              handleTx(
+                () => setPriceFeed(tokenPair, feedAddress as `0x${string}`),
+                "Setting feed"
+              )
             }
             disabled={isLoading}
           >
             Set Feed
           </button>
           <p className="text-sm text-gray-600">
-            Current feed: <span className="font-mono">{currentFeed || "Not set"}</span>
+            Current feed:{" "}
+            <span className="font-mono">{currentFeed || "Not set"}</span>
           </p>
         </section>
 
@@ -115,17 +126,30 @@ export default function FactoryTryPage() {
             value={expiry}
             onChange={(e) => setExpiry(e.target.value)}
           />
-          <div className="flex gap-2">
-            <button onClick={() => setRelativeExpiry(1)} className="btn-light">
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setRelativeExpiry(60)} className="btn-light">
+              +1 Min
+            </button>
+            <button
+              onClick={() => setRelativeExpiry(1 * 24 * 60 * 60)}
+              className="btn-light"
+            >
               +1 Day
             </button>
-            <button onClick={() => setRelativeExpiry(7)} className="btn-light">
+            <button
+              onClick={() => setRelativeExpiry(7 * 24 * 60 * 60)}
+              className="btn-light"
+            >
               +1 Week
             </button>
-            <button onClick={() => setRelativeExpiry(30)} className="btn-light">
+            <button
+              onClick={() => setRelativeExpiry(30 * 24 * 60 * 60)}
+              className="btn-light"
+            >
               +1 Month
             </button>
           </div>
+
           <input
             className="input"
             placeholder="Creator Fee (e.g. 50 = 0.5%)"
