@@ -1,21 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChainNavigation } from "@/components/layout/ChainNavigation";
 import { PredictionPoolsFeed } from "@/components/game/GameFeed";
 import { GameNavigation } from "@/components/game/GameNavigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProfileStore } from "@/store/profileStore";
 import { useWalletStore } from "@/store/walletStore";
 
-/**
- * Displays the main game feed page, fetching and rendering game data based on the user's wallet connection status.
- *
- * Shows a loading indicator while fetching games for the connected wallet. Once loading is complete, renders navigation and game feed components.
- */
 export default function AppPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const { fetchGamesByPair, fetchGames } = useProfileStore();
+  const { fetchGames } = useProfileStore();
   const { address, isConnected } = useWalletStore();
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-export interface ProfileState {
+interface ProfileState {
     games: Game[];
     isLoading: boolean;
     fetchGames: (address: string) => Promise<void>;

@@ -1,5 +1,12 @@
 import React, { useState, useMemo } from "react";
-import { Timer, Grid, List, TrendingUp, TrendingDown, Clock } from "lucide-react";
+import {
+  Timer,
+  Grid,
+  List,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAllPools } from "@/lib/web3/factory";
 import { usePoolMetadata } from "@/lib/web3/pool";
@@ -10,24 +17,37 @@ const Countdown = ({ expiry }: { expiry: bigint }) => {
     expiryTimestamp: new Date(Number(expiry) * 1000),
     autoStart: true,
   });
-  
+
   if (!isRunning) {
     return <span className="text-red-600 text-sm font-semibold">Expired</span>;
   }
-  
+
   return (
     <span className="text-gray-600 text-sm font-mono">
-      {[days && `${days}d`, hours && `${hours}h`, minutes && `${minutes}m`, `${seconds}s`]
+      {[
+        days && `${days}d`,
+        hours && `${hours}h`,
+        minutes && `${minutes}m`,
+        `${seconds}s`,
+      ]
         .filter(Boolean)
         .join(" ")}
     </span>
   );
 };
 
-const PoolCard = ({ address, viewMode }: { address: `0x${string}`; viewMode: "grid" | "list" }) => {
+const PoolCard = ({
+  address,
+  viewMode,
+}: {
+  address: `0x${string}`;
+  viewMode: "grid" | "list";
+}) => {
   const { metadata } = usePoolMetadata(address);
   const router = useRouter();
-  const isExpired = metadata ? Number(metadata.expiry) < Date.now() / 1000 : false;
+  const isExpired = metadata
+    ? Number(metadata.expiry) < Date.now() / 1000
+    : false;
 
   const handleClick = () => {
     router.push(`/try-contracts/pools/${address}`);
@@ -44,18 +64,27 @@ const PoolCard = ({ address, viewMode }: { address: `0x${string}`; viewMode: "gr
             <div className="flex items-center gap-6">
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-semibold text-black truncate">
-                  {typeof metadata?.tokenPair === "string" ? metadata.tokenPair : "Loading..."}
+                  {typeof metadata?.tokenPair === "string"
+                    ? metadata.tokenPair
+                    : "Loading..."}
                 </h3>
                 <div className="flex items-center gap-6 mt-2">
                   <p className="text-sm text-gray-600">
-                    Target: <span className="font-semibold text-black">${metadata?.targetPrice?.toString() || "—"}</span>
+                    Target:{" "}
+                    <span className="font-semibold text-black">
+                      ${metadata?.targetPrice?.toString() || "—"}
+                    </span>
                   </p>
                   <p className="text-sm text-gray-500">
-                    Creator Fee: {metadata?.creatorFee ? Number(metadata.creatorFee) / 100 : 0}%
+                    Creator Fee:{" "}
+                    {metadata?.creatorFee
+                      ? Number(metadata.creatorFee) / 100
+                      : 0}
+                    %
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
                 <Clock className="h-4 w-4" />
                 {typeof metadata?.expiry === "bigint" ? (
@@ -66,7 +95,7 @@ const PoolCard = ({ address, viewMode }: { address: `0x${string}`; viewMode: "gr
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3 ml-8">
             <button
               className="px-5 py-2.5 bg-[#BAD8B6] hover:bg-[#9CC499] text-black text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 min-w-[90px] justify-center shadow-sm"
@@ -102,10 +131,15 @@ const PoolCard = ({ address, viewMode }: { address: `0x${string}`; viewMode: "gr
       <div className="space-y-4">
         <div>
           <h3 className="text-lg font-semibold text-black mb-2">
-            {typeof metadata?.tokenPair === "string" ? metadata.tokenPair : "Loading..."}
+            {typeof metadata?.tokenPair === "string"
+              ? metadata.tokenPair
+              : "Loading..."}
           </h3>
           <p className="text-sm text-gray-600">
-            Target: <span className="font-semibold text-black">${metadata?.targetPrice?.toString() || "—"}</span>
+            Target:{" "}
+            <span className="font-semibold text-black">
+              ${metadata?.targetPrice?.toString() || "—"}
+            </span>
           </p>
         </div>
 
@@ -157,12 +191,13 @@ export const PredictionPoolsFeed = () => {
   const router = useRouter();
 
   const perPage = 12;
-  const paginatedPools = useMemo(() => 
-    allPools?.slice((currentPage - 1) * perPage, currentPage * perPage) || [], 
+  const paginatedPools = useMemo(
+    () =>
+      allPools?.slice((currentPage - 1) * perPage, currentPage * perPage) || [],
     [allPools, currentPage]
   );
-  const totalPages = useMemo(() => 
-    Math.ceil((allPools?.length || 0) / perPage), 
+  const totalPages = useMemo(
+    () => Math.ceil((allPools?.length || 0) / perPage),
     [allPools]
   );
 
@@ -187,15 +222,16 @@ export const PredictionPoolsFeed = () => {
               🎯 Active Prediction Markets
             </h1>
             <p className="text-gray-700 text-lg">
-              {allPools?.length || 0} {allPools?.length === 1 ? 'pool' : 'pools'} available
+              {allPools?.length || 0}{" "}
+              {allPools?.length === 1 ? "pool" : "pools"} available
             </p>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="flex items-center bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
               {[
                 { mode: "list", icon: List },
-                { mode: "grid", icon: Grid }
+                { mode: "grid", icon: Grid },
               ].map(({ mode, icon: Icon }) => (
                 <button
                   key={mode}
@@ -235,11 +271,13 @@ export const PredictionPoolsFeed = () => {
             </div>
           </div>
         ) : (
-          <div className={
-            viewMode === "grid" 
-              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" 
-              : "space-y-3"
-          }>
+          <div
+            className={
+              viewMode === "grid"
+                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+                : "space-y-3"
+            }
+          >
             {paginatedPools.map((address) => (
               <PoolCard key={address} address={address} viewMode={viewMode} />
             ))}
@@ -256,23 +294,25 @@ export const PredictionPoolsFeed = () => {
             >
               Previous
             </button>
-            
+
             <div className="flex items-center gap-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
-                    currentPage === page
-                      ? "bg-black text-white shadow-sm"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                      currentPage === page
+                        ? "bg-black text-white shadow-sm"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
             </div>
-            
+
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
