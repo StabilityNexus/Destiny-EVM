@@ -12,6 +12,11 @@ import { useSyncWallet } from "@/hooks/useSyncWallet";
 import { useWalletStore } from "@/store/walletStore";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
+/**
+ * Provides the main application layout, displaying navigation and content when the wallet is connected, or prompting the user to connect their wallet otherwise.
+ *
+ * @param children - The content to render within the layout when the wallet is connected
+ */
 export default function Layout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {

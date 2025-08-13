@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { ProfileState } from '@/types/profile';
 
 export const useProfileStore = create<ProfileState>()(
   devtools(
