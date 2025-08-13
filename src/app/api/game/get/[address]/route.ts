@@ -1,12 +1,10 @@
-import { NextResponse } from 'next/server';
-import { ethers } from 'ethers';
+import { NextRequest, NextResponse } from 'next/server';
 // import PredictionGameABI from '@/contracts/abi/PredictionGame.json';
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_PREDICTION_GAME_CONTRACT || '';
 
 export async function GET(
-    request: Request,
-    { params }: { params: { address: string } }
+    request: NextRequest,
 ) {
     try {
         // const { address } = params;
