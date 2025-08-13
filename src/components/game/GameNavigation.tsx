@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { CreateGameModal } from "./CreateGameModal";
+import { CreateGameModal } from "./feed/CreateGameModal";
 import { useWalletStore } from "@/store/walletStore";
 import toast from "react-hot-toast";
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Timer,
   Grid,
@@ -6,11 +6,15 @@ import {
   TrendingUp,
   TrendingDown,
   Clock,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAllPools } from "@/lib/web3/factory";
 import { usePoolMetadata } from "@/lib/web3/pool";
 import { useTimer } from "react-timer-hook";
+import { Button } from "../ui/button";
 
 const Countdown = ({ expiry }: { expiry: bigint }) => {
   const { seconds, minutes, hours, days, isRunning } = useTimer({
@@ -36,18 +40,34 @@ const Countdown = ({ expiry }: { expiry: bigint }) => {
   );
 };
 
+/**
+ * PoolCard now accepts an optional `preloadedMetadata` prop.
+ * If provided parent metadata will be used for display/filtering,
+ * otherwise the component still calls usePoolMetadata (no conditional hooks).
+ */
 const PoolCard = ({
   address,
   viewMode,
+  preloadedMetadata,
 }: {
   address: `0x${string}`;
   viewMode: "grid" | "list";
+  preloadedMetadata?: any;
 }) => {
-  const { metadata } = usePoolMetadata(address);
+  // Always call the hook (hooks must be deterministic). Prefer parent metadata if available.
+  const { metadata: hookMetadata } = usePoolMetadata(address);
+  const metadata = preloadedMetadata ?? hookMetadata;
+
   const router = useRouter();
   const isExpired = metadata
     ? Number(metadata.expiry) < Date.now() / 1000
     : false;
+
+  const handleBetClick = (e: React.MouseEvent, type: "bull" | "bear") => {
+    e.stopPropagation();
+    if (isExpired) return;
+    // Handle bet logic...
+  };
 
   const handleClick = () => {
     router.push(`/try-contracts/pools/${address}`);
@@ -97,26 +117,28 @@ const PoolCard = ({
           </div>
 
           <div className="flex items-center gap-3 ml-8">
-            <button
-              className="px-5 py-2.5 bg-[#BAD8B6] hover:bg-[#9CC499] text-black text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 min-w-[90px] justify-center shadow-sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                // Handle bull bet
-              }}
-            >
-              <TrendingUp className="h-4 w-4" />
-              BULL
-            </button>
-            <button
-              className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 min-w-[90px] justify-center shadow-sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                // Handle bear bet
-              }}
-            >
-              <TrendingDown className="h-4 w-4" />
-              BEAR
-            </button>
+            {isExpired ? (
+              <span className="text-sm text-red-600 font-semibold">
+                Betting Closed
+              </span>
+            ) : (
+              <>
+                <button
+                  className="px-5 py-2.5 bg-[#BAD8B6] hover:bg-[#9CC499] text-black text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 min-w-[90px] justify-center shadow-sm"
+                  onClick={(e) => handleBetClick(e, "bull")}
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  BULL
+                </button>
+                <button
+                  className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 min-w-[90px] justify-center shadow-sm"
+                  onClick={(e) => handleBetClick(e, "bear")}
+                >
+                  <TrendingDown className="h-4 w-4" />
+                  BEAR
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -157,49 +179,194 @@ const PoolCard = ({
           </span>
         </div>
 
-        <div className="flex gap-3">
-          <button
-            className="flex-1 py-2.5 bg-[#BAD8B6] hover:bg-[#9CC499] text-black text-sm font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Handle bull bet
-            }}
-          >
-            <TrendingUp className="h-4 w-4" />
-            BULL
-          </button>
-          <button
-            className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Handle bear bet
-            }}
-          >
-            <TrendingDown className="h-4 w-4" />
-            BEAR
-          </button>
-        </div>
+        {isExpired ? (
+          <span className="text-sm text-red-600 font-semibold">
+            Betting Closed
+          </span>
+        ) : (
+          <div className="flex gap-3">
+            <button
+              className="flex-1 py-2.5 bg-[#BAD8B6] hover:bg-[#9CC499] text-black text-sm font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
+              onClick={(e) => handleBetClick(e, "bull")}
+            >
+              <TrendingUp className="h-4 w-4" />
+              BULL
+            </button>
+            <button
+              className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
+              onClick={(e) => handleBetClick(e, "bear")}
+            >
+              <TrendingDown className="h-4 w-4" />
+              BEAR
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
+/**
+ * MetadataLoader: small component which fetches metadata for one address and sends it to parent.
+ * This is safe: each address gets its own component + hook.
+ */
+const MetadataLoader = ({
+  address,
+  onUpdate,
+}: {
+  address: string;
+  onUpdate: (address: string, metadata: any) => void;
+}) => {
+  const { metadata } = usePoolMetadata(address as `0x${string}`);
+  useEffect(() => {
+    if (metadata) {
+      onUpdate(address, metadata);
+    }
+  }, [
+    address,
+    metadata ? JSON.stringify(metadata) : null, // shallow compare by value
+    onUpdate,
+  ]);
+
+  return null;
+};
+
 export const PredictionPoolsFeed = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeFilter, setActiveFilter] = useState<
+    "all" | "active" | "expired"
+  >("all");
+  const [sortBy, setSortBy] = useState<
+    "newest" | "oldest" | "volume" | "ending_soon"
+  >("newest");
+  const [searchQuery, setSearchQuery] = useState("");
   const { allPools, isLoading } = useAllPools();
   const router = useRouter();
 
-  const perPage = 12;
+  // Map address => metadata populated by MetadataLoader components
+  const [metadataMap, setMetadataMap] = useState<Record<string, any>>({});
+
+  const handleMetadataUpdate = useCallback((address: string, metadata: any) => {
+    setMetadataMap((prev) => {
+      const prevMetadata = prev[address];
+      // Prevent updates if data is the same by value
+      if (JSON.stringify(prevMetadata) === JSON.stringify(metadata)) {
+        return prev;
+      }
+      return { ...prev, [address]: metadata };
+    });
+  }, []);
+
+  const perPage = 5; // Increased for better pagination
+
+  // Filter and sort pools — use metadataMap for expiry checks if available.
+  const filteredPools = useMemo(() => {
+    if (!allPools) return [];
+
+    const now = Date.now() / 1000;
+    const lowerQuery = searchQuery.trim().toLowerCase();
+
+    let filtered = allPools.filter((address) => {
+      const md = metadataMap[address];
+      const isExpired = md ? Number(md.expiry) < now : false;
+
+      // Status filter
+      if (activeFilter === "active" && md) {
+        if (isExpired) return false;
+      } else if (activeFilter === "expired" && md) {
+        if (!isExpired) return false;
+      } else if (activeFilter === "active" && !md) {
+        // metadata unknown -> include by default (treat as active until known)
+      } else if (activeFilter === "expired" && !md) {
+        // metadata unknown -> exclude expired-only list by default
+        return false;
+      }
+
+      // Search filter: prefer tokenPair from metadata, fall back to address
+      if (lowerQuery) {
+        const tokenPair = (md?.tokenPair as string) ?? address;
+        return tokenPair.toLowerCase().includes(lowerQuery);
+      }
+
+      return true;
+    });
+
+    // TODO: implement sorting if needed (sortBy)
+    return filtered;
+  }, [allPools, metadataMap, activeFilter, searchQuery, sortBy]);
+
   const paginatedPools = useMemo(
     () =>
-      allPools?.slice((currentPage - 1) * perPage, currentPage * perPage) || [],
-    [allPools, currentPage]
+      filteredPools.slice((currentPage - 1) * perPage, currentPage * perPage),
+    [filteredPools, currentPage, perPage]
   );
+
   const totalPages = useMemo(
-    () => Math.ceil((allPools?.length || 0) / perPage),
-    [allPools]
+    () => Math.max(1, Math.ceil(filteredPools.length / perPage)),
+    [filteredPools, perPage]
   );
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, sortBy, searchQuery]);
+
+  const getFilterCounts = useMemo(() => {
+    if (!allPools) return { all: 0, active: 0, expired: 0 };
+
+    const now = Date.now() / 1000;
+    let active = 0;
+    let expired = 0;
+
+    for (const address of allPools) {
+      const md = metadataMap[address];
+      if (md) {
+        if (Number(md.expiry) < now) expired++;
+        else active++;
+      } else {
+        // treat unknown as active by default
+        active++;
+      }
+    }
+
+    return {
+      all: allPools.length,
+      active,
+      expired,
+    };
+  }, [allPools, metadataMap]);
+
+  // Pagination helpers (unchanged)
+  const getVisiblePages = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+
+    for (
+      let i = Math.max(2, currentPage - delta);
+      i <= Math.min(totalPages - 1, currentPage + delta);
+      i++
+    ) {
+      range.push(i);
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, "...");
+    } else {
+      rangeWithDots.push(1);
+    }
+
+    rangeWithDots.push(...range);
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push("...", totalPages);
+    } else if (totalPages > 1) {
+      rangeWithDots.push(totalPages);
+    }
+
+    return rangeWithDots.filter((v, i, arr) => arr.indexOf(v) === i);
+  };
 
   if (isLoading) {
     return (
@@ -216,18 +383,26 @@ export const PredictionPoolsFeed = () => {
     <div className="min-h-screen bg-[#FDFCF5] text-black">
       <div className="max-w-7xl mx-auto px-8 py-12">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-12">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8">
           <div>
             <h1 className="text-3xl font-extrabold text-black mb-2 tracking-tight">
-              🎯 Active Prediction Markets
+              🎯 Prediction Markets
             </h1>
             <p className="text-gray-700 text-lg">
-              {allPools?.length || 0}{" "}
-              {allPools?.length === 1 ? "pool" : "pools"} available
+              {filteredPools.length} of {allPools?.length || 0}{" "}
+              {allPools?.length === 1 ? "pool" : "pools"}
+              {activeFilter !== "all" && ` (${activeFilter})`}
             </p>
           </div>
 
           <div className="flex items-center gap-4">
+            <Button
+              onClick={() => router.push("/try-contracts/factory")}
+              className="px-4 py-2 bg-[#BAD8B6] text-black font-semibold rounded-lg shadow-sm hover:bg-[#a7c8a3] transition-all duration-200"
+            >
+              CREATE PREDICTION +
+            </Button>
+
             <div className="flex items-center bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
               {[
                 { mode: "list", icon: List },
@@ -249,78 +424,185 @@ export const PredictionPoolsFeed = () => {
           </div>
         </div>
 
+        {/* Search and Filters */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-8">
+          {/* Search Bar */}
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search prediction pools..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#BAD8B6] focus:border-[#BAD8B6] outline-none transition-all duration-200"
+            />
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+            {/* Status Filters */}
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { key: "all", label: "All Pools", count: getFilterCounts.all },
+                {
+                  key: "active",
+                  label: "Active",
+                  count: getFilterCounts.active,
+                },
+                {
+                  key: "expired",
+                  label: "Expired",
+                  count: getFilterCounts.expired,
+                },
+              ].map(({ key, label, count }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveFilter(key as any)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    activeFilter === key
+                      ? "bg-[#BAD8B6] text-black shadow-sm"
+                      : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {label} ({count})
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Invisible metadata loaders to populate metadataMap */}
+        <div className="sr-only" aria-hidden>
+          {allPools?.map((addr) => (
+            <MetadataLoader
+              key={addr}
+              address={addr}
+              onUpdate={handleMetadataUpdate}
+            />
+          ))}
+        </div>
+
         {/* Content */}
-        {!allPools?.length ? (
+        {!filteredPools.length ? (
           <div className="text-center py-20">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6">
-                <Timer className="h-8 w-8 text-gray-400" />
+                {searchQuery || activeFilter !== "all" ? (
+                  <Search className="h-8 w-8 text-gray-400" />
+                ) : (
+                  <Timer className="h-8 w-8 text-gray-400" />
+                )}
               </div>
               <h3 className="text-xl font-semibold text-black mb-3">
-                No prediction pools yet
+                {searchQuery || activeFilter !== "all"
+                  ? "No pools match your filters"
+                  : "No prediction pools yet"}
               </h3>
               <p className="text-gray-700 mb-8 text-lg">
-                Get started by creating the first prediction pool.
+                {searchQuery || activeFilter !== "all"
+                  ? "Try adjusting your search or filters to find more pools."
+                  : "Get started by creating the first prediction pool."}
               </p>
-              <button
-                onClick={() => router.push("/try-contracts/factory")}
-                className="inline-flex items-center px-6 py-3 bg-black text-white text-sm font-semibold rounded-lg hover:bg-gray-900 transition-all duration-200 shadow-sm"
-              >
-                Create First Pool
-              </button>
+              {!searchQuery && activeFilter === "all" && (
+                <button
+                  onClick={() => router.push("/try-contracts/factory")}
+                  className="inline-flex items-center px-6 py-3 bg-black text-white text-sm font-semibold rounded-lg hover:bg-gray-900 transition-all duration-200 shadow-sm"
+                >
+                  Create First Pool
+                </button>
+              )}
             </div>
           </div>
         ) : (
-          <div
-            className={
-              viewMode === "grid"
-                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-                : "space-y-3"
-            }
-          >
-            {paginatedPools.map((address) => (
-              <PoolCard key={address} address={address} viewMode={viewMode} />
-            ))}
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-3 mt-12 pt-8 border-t border-gray-200">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+          <>
+            <div
+              className={
+                viewMode === "grid"
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                  : "space-y-3"
+              }
             >
-              Previous
-            </button>
-
-            <div className="flex items-center gap-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
-                      currentPage === page
-                        ? "bg-black text-white shadow-sm"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                )
-              )}
+              {paginatedPools.map((address) => (
+                <PoolCard
+                  key={address}
+                  address={address as `0x${string}`}
+                  viewMode={viewMode}
+                  preloadedMetadata={metadataMap[address]}
+                />
+              ))}
             </div>
 
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
-            >
-              Next
-            </button>
-          </div>
+            {/* Enhanced Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-12 pt-8 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  {/* Page Info */}
+                  <div className="text-sm text-gray-700">
+                    Showing {(currentPage - 1) * perPage + 1} to{" "}
+                    {Math.min(currentPage * perPage, filteredPools.length)} of{" "}
+                    {filteredPools.length} results
+                  </div>
+
+                  {/* Pagination Controls */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                    >
+                      First
+                    </button>
+
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {getVisiblePages().map((page, index) => (
+                        <button
+                          key={index}
+                          onClick={() =>
+                            typeof page === "number" && setCurrentPage(page)
+                          }
+                          disabled={page === "..."}
+                          className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                            currentPage === page
+                              ? "bg-black text-white shadow-sm"
+                              : page === "..."
+                              ? "text-gray-400 cursor-default"
+                              : "text-gray-700 hover:bg-gray-100"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+
+                    <button
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                    >
+                      Last
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

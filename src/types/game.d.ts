@@ -13,3 +13,7 @@ interface Game {
     contract: string;
     creator: string;
 }
+
+interface PredictionPool {
+    
+}

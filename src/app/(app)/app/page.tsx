@@ -34,7 +34,7 @@ export default function AppPage() {
 
   return (
     <div className="flex flex-col gap-8 px-4 sm:px-6 md:px-12 lg:px-24 xl:px-32 2xl:px-64 w-full max-w-[1920px] mx-auto justify-center">
-      <GameNavigation />
+      {/* <GameNavigation /> */}
       <PredictionPoolsFeed />
     </div>
   );
