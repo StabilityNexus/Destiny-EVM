@@ -26,3 +26,8 @@ export const NATIVE_TOKENS: Record<SupportedChain, string> = {
     mainnet: 'ETH',
     polygon: 'MATIC',
 };
+
+export const FACTORY_ADDRESSES = {
+    sepolia: '0x27F0445e9A28eeF757d132f5257dd994Ff06fB54',
+    amoy: '0xeFD22a59Cd56A220a275824D84a8520C5A44671A'
+}
