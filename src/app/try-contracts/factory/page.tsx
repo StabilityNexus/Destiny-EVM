@@ -7,7 +7,7 @@ import {
   useCreatePredictionPool,
   useAllPools,
 } from "@/lib/web3/factory";
-import { useAccount, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useChainId, useWaitForTransactionReceipt } from "wagmi";
 import toast from "react-hot-toast";
 import { Settings2Icon } from "lucide-react";
 
@@ -26,6 +26,8 @@ export default function FactoryTryPage() {
   const createPredictionPool = useCreatePredictionPool();
   const { feedAddress: currentFeed } = useGetPriceFeed(tokenPair);
   const { allPools } = useAllPools();
+
+  const chainId = useChainId();
 
   const { isLoading, isSuccess, isError, error } = useWaitForTransactionReceipt(
     {
@@ -92,7 +94,7 @@ export default function FactoryTryPage() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center space-y-4">
             <h1 className="text-5xl font-extrabold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-               Factory Playground
+              Factory Playground
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Create and manage prediction pools with custom price feeds and

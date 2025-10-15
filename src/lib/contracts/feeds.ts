@@ -34,7 +34,7 @@ export const PRICE_FEEDS = {
     'stETH Proof of Reserves': '0x8328e01902A47942Eecb9DBF97d6B9dd3bd07E6',
     'tfBILL NAV': '0x98893037aA4462201A75cF483a60883f09c42537',
   },
-  mainnet: {
+  polygonAmoy: {
     // Add feeds for mainnet here
   },
 };
