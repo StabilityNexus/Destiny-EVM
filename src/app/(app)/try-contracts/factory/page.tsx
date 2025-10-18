@@ -7,9 +7,18 @@ import {
   useCreatePredictionPool,
   useAllPools,
 } from "@/lib/web3/factory";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAccount, useChainId, useWaitForTransactionReceipt } from "wagmi";
 import toast from "react-hot-toast";
 import { Settings2Icon } from "lucide-react";
+import { PRICE_FEEDS } from "@/lib/contracts/feeds";
+import PriceFeedSelector from "@/components/game/PriceFeedSelector";
 
 export default function FactoryTryPage() {
   const { address } = useAccount();
@@ -18,6 +27,8 @@ export default function FactoryTryPage() {
   const [feedAddress, setFeedAddress] = useState("");
   const [targetPrice, setTargetPrice] = useState("");
   const [expiry, setExpiry] = useState("");
+  const [rampStart, setRampStart] = useState("");
+  const [rampStartDateTime, setRampStartDateTime] = useState<string>("");
   const [creatorFee, setCreatorFee] = useState("50");
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -28,11 +39,12 @@ export default function FactoryTryPage() {
   const { allPools } = useAllPools();
 
   const chainId = useChainId();
+  const feedsForChain = PRICE_FEEDS[chainId] || {};
 
   const { isLoading, isSuccess, isError, error } = useWaitForTransactionReceipt(
     {
       hash: txHash ?? undefined,
-      chainId: 11155111,
+      chainId: chainId,
       confirmations: 1,
     }
   );
@@ -81,6 +93,12 @@ export default function FactoryTryPage() {
   const formatExpiryDate = (timestamp: string) => {
     if (!timestamp || !mounted) return "";
     return new Date(Number(timestamp) * 1000).toLocaleString();
+  };
+
+  const handlePairChange = (pair: string) => {
+    setTokenPair(pair);
+    const selectedAddress = feedsForChain[pair];
+    if (selectedAddress) setFeedAddress(selectedAddress);
   };
 
   const isFormValid = tokenPair && targetPrice && expiry && creatorFee;
@@ -152,7 +170,7 @@ export default function FactoryTryPage() {
             </div>
 
             <div className="space-y-4">
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
                   Token Pair
                 </label>
@@ -162,7 +180,14 @@ export default function FactoryTryPage() {
                   value={tokenPair}
                   onChange={(e) => setTokenPair(e.target.value)}
                 />
-              </div>
+              </div> */}
+
+              <PriceFeedSelector
+                tokenPair={tokenPair}
+                setTokenPair={setTokenPair}
+                feedAddress={feedAddress}
+                setFeedAddress={setFeedAddress}
+              />
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
@@ -253,6 +278,79 @@ export default function FactoryTryPage() {
                 </div>
               </div>
 
+              {/* Ramp Start Section - Only visible if expiry is set */}
+              {expiry && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Ramp Start (optional)
+                  </label>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex gap-2 flex-wrap">
+                    {[
+                      { label: "1 hour before expiry", offset: 3600 },
+                      { label: "6 hours before expiry", offset: 3600 * 6 },
+                      { label: "12 hours before expiry", offset: 3600 * 12 },
+                      { label: "1 day before expiry", offset: 3600 * 24 },
+                      { label: "2 days before expiry", offset: 3600 * 24 * 2 },
+                    ].map(({ label, offset }) => {
+                      const expiryTime = Number(expiry);
+                      const timestamp = expiryTime - offset;
+                      const now = Math.floor(Date.now() / 1000);
+
+                      // Only allow times in the future
+                      if (timestamp <= now) return null;
+
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          className="py-2 px-3 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
+                          onClick={() => {
+                            setRampStart(timestamp.toString());
+                            setRampStartDateTime(
+                              new Date(timestamp * 1000)
+                                .toISOString()
+                                .slice(0, 16)
+                            );
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Optional manual datetime input */}
+                  <input
+                    type="datetime-local"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400 font-mono text-sm"
+                    value={rampStartDateTime}
+                    onChange={(e) => {
+                      const timestamp =
+                        new Date(e.target.value).getTime() / 1000;
+                      const now = Math.floor(Date.now() / 1000);
+                      const expiryTime = Number(expiry);
+                      if (timestamp > now && timestamp < expiryTime) {
+                        setRampStart(timestamp.toString());
+                        setRampStartDateTime(e.target.value);
+                      }
+                    }}
+                    min={new Date().toISOString().slice(0, 16)}
+                    max={new Date(Number(expiry) * 1000)
+                      .toISOString()
+                      .slice(0, 16)}
+                  />
+
+                  {/* Display selected ramp start */}
+                  {rampStart && mounted && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      ⏱️ {formatExpiryDate(rampStart)} (Ramp Start)
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
                   Expiry Time
@@ -300,6 +398,7 @@ export default function FactoryTryPage() {
                         tokenPair,
                         BigInt(targetPrice),
                         BigInt(expiry),
+                        BigInt(rampStart || 0),
                         BigInt(creatorFee)
                       ),
                     "Creating Pool"
