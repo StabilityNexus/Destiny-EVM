@@ -25,7 +25,6 @@ import {
 import { useParams } from "next/navigation";
 import { useAccount, useReadContract } from "wagmi";
 import { formatEther, parseEther } from "viem/utils";
-// import { usePoolMetadata, useGetUserShares, usePoolWrites } from "@/hooks/pool";
 import abi from "@/lib/contracts/abi/PredictionPool.json";
 import {
   usePoolMetadata,
@@ -56,7 +55,7 @@ const Countdown = ({ expiry }: { expiry: bigint | undefined }) => {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      const now = Math.floor(Date.now() / 1000); // Unix timestamp in seconds
+      const now = Math.floor(Date.now() / 1000);
       const diff = Number(expiry) - now;
 
       if (diff <= 0) {
@@ -93,7 +92,6 @@ export default function PoolDetailPage() {
   const { contract } = useParams<{ contract: `0x${string}` }>();
   const { address: userAddress } = useAccount();
 
-  // Read contract data
   const { metadata } = usePoolMetadata(contract);
 
   console.log("Pool Metadata:", metadata);
@@ -105,60 +103,8 @@ export default function PoolDetailPage() {
 
   console.log("User Shares - Bull:", bullShares, "Bear:", bearShares);
 
-  // const { data: totalBullShares } = useReadContract({
-  //   abi,
-  //   address: contract,
-  //   functionName: "totalBullShares",
-  // });
-
-  // const { data: totalBearShares } = useReadContract({
-  //   abi,
-  //   address: contract,
-  //   functionName: "totalBearShares",
-  // });
-
-  // const { data: currentPrice } = useReadContract({
-  //   abi,
-  //   address: contract,
-  //   functionName: "getCurrentPrice",
-  // });
-
-  // const { data: creator } = useReadContract({
-  //   abi,
-  //   address: contract,
-  //   functionName: "creator",
-  // });
-
-  // const { data: isExpired } = useReadContract({
-  //   abi,
-  //   address: contract,
-  //   functionName: "isExpired",
-  // });
-
-  // const { data: currentFeeData } = useReadContract({
-  //   abi,
-  //   address: contract,
-  //   functionName: "getLatestPrice",
-  // });
-
-  // const { bullShares, bearShares } = useGetUserShares(
-  //   contract,
-  //   userAddress || "0x0000000000000000000000000000000000000000"
-  // );
-
-  // Write functions
   const { mint, burn, claim } = usePoolWrites(contract);
 
-  // Calculate derived values
-  // const totalBull = totalBullShares
-  //   ? parseFloat(formatEther(totalBullShares))
-  //   : 0;
-  // const totalBear = totalBearShares
-  //   ? parseFloat(formatEther(totalBearShares))
-  //   : 0;
-  // TODO: Replace with real data
-  // const totalBull = 10000;
-  // const totalBear = 8000;
   const totalBull = bullShares;
   const totalBear = bearShares;
 
@@ -170,7 +116,7 @@ export default function PoolDetailPage() {
 
   const totalPool = totalBull + totalBear;
   const bullPercentage =
-    totalPool > 0 ? Number((totalBull * BigInt(100)) / totalPool) : 50; // percent as integer
+    totalPool > 0 ? Number((totalBull * BigInt(100)) / totalPool) : 50;
   const bearPercentage =
     totalPool > 0 ? Number((totalBear * BigInt(100)) / totalPool) : 50;
 
@@ -189,9 +135,6 @@ export default function PoolDetailPage() {
     ? Number(metadata.creatorFee) / 100
     : 0;
 
-  // const userBullShares = bullShares ? parseFloat(formatEther(bullShares)) : 0;
-  // const userBearShares = bearShares ? parseFloat(formatEther(bearShares)) : 0;
-
   const expectedShares = betAmount
     ? parseFloat(betAmount) * (1 - currentFee / 100)
     : 0;
@@ -204,10 +147,8 @@ export default function PoolDetailPage() {
       const side = selectedSide === "bull" ? "BULL" : "BEAR";
       await mint(side, betAmount);
       setBetAmount("");
-      // You might want to show a success toast here
     } catch (error) {
       console.error("Mint failed:", error);
-      // You might want to show an error toast here
     } finally {
       setIsLoading(false);
     }
@@ -216,16 +157,13 @@ export default function PoolDetailPage() {
   const handleBurn = async () => {
     const shareAmount = selectedSide === "bull" ? bullShares : bearShares;
     if (!shareAmount || shareAmount <= 0) return;
-    // if (shareAmount <= 0) return;
 
     setIsLoading(true);
     try {
       const side = selectedSide === "bull" ? "BULL" : "BEAR";
       await burn(side, shareAmount.toString());
-      // You might want to show a success toast here
     } catch (error) {
       console.error("Burn failed:", error);
-      // You might want to show an error toast here
     } finally {
       setIsLoading(false);
     }
@@ -235,10 +173,8 @@ export default function PoolDetailPage() {
     setIsLoading(true);
     try {
       await claim();
-      // You might want to show a success toast here
     } catch (error) {
       console.error("Claim failed:", error);
-      // You might want to show an error toast here
     } finally {
       setIsLoading(false);
     }
@@ -249,7 +185,6 @@ export default function PoolDetailPage() {
   }
 
   if (!metadata) {
-    // still loading (undefined state)
     return (
       <div className="min-h-screen bg-[#FDFCF5] flex items-center justify-center">
         <div className="text-center">
@@ -259,37 +194,38 @@ export default function PoolDetailPage() {
       </div>
     );
   }
+
   return (
     <div className="min-h-screen bg-[#FDFCF5] py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Left Panel - Pool Info */}
-          <div className="lg:col-span-4 space-y-6">
+          <div className="lg:col-span-4 space-y-5">
             {/* Pool Header Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h1 className="text-3xl font-bold text-black mb-1">
+                  <h1 className="text-2xl font-bold text-black mb-1">
                     {metadata.tokenPair}
                   </h1>
                   <p className="text-sm text-gray-600">Prediction Pool</p>
                 </div>
-                <div className="text-4xl">Ξ</div>
+                <div className="text-3xl">Ξ</div>
               </div>
 
               {/* Target Price */}
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <div className="bg-gray-50 rounded-xl p-3.5 mb-3">
                 <p className="text-xs text-gray-600 mb-1">TARGET PRICE</p>
-                <p className="text-3xl font-bold text-black">
+                <p className="text-2xl font-bold text-black">
                   ${targetPrice * 10 ** 8}
                 </p>
               </div>
 
               {/* Current Price */}
-              <div className="bg-blue-50 rounded-lg p-4 mb-4">
+              <div className="bg-blue-50 rounded-xl p-3.5 mb-3">
                 <p className="text-xs text-gray-600 mb-1">CURRENT PRICE</p>
                 <div className="flex items-center justify-between">
-                  <p className="text-2xl font-bold text-black">
+                  <p className="text-xl font-bold text-black">
                     ${current.toLocaleString()}
                   </p>
                   <div
@@ -308,7 +244,7 @@ export default function PoolDetailPage() {
               </div>
 
               {/* Countdown */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-4">
+              <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl mb-3">
                 <div className="flex items-center gap-2 text-gray-600">
                   <Clock className="h-4 w-4" />
                   <span className="text-sm font-semibold">Time Remaining</span>
@@ -322,11 +258,6 @@ export default function PoolDetailPage() {
                   <User className="h-4 w-4" />
                   <span>Creator</span>
                 </div>
-                {/* <span className="font-mono text-black">
-                  {creator
-                    ? `${creator.slice(0, 6)}...${creator.slice(-4)}`
-                    : ""}
-                </span> */}
               </div>
               <div className="flex items-center justify-between text-sm mt-2">
                 <span className="text-gray-600">Creator Fee</span>
@@ -337,20 +268,20 @@ export default function PoolDetailPage() {
             </div>
 
             {/* Pool Stats Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+              <h2 className="text-base font-bold text-black mb-4 flex items-center gap-2">
                 <Activity className="h-5 w-5" />
                 Pool Statistics
               </h2>
 
-              <div className="space-y-4">
+              <div className="space-y-3.5">
                 {/* Total Pool */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600">
                       Total Pool Value
                     </span>
-                    <span className="text-xl font-bold text-black">
+                    <span className="text-lg font-bold text-black">
                       {Number(totalPool).toFixed(2)} ETH
                     </span>
                   </div>
@@ -363,7 +294,7 @@ export default function PoolDetailPage() {
                       <TrendingUp className="h-4 w-4" />
                       BULL
                     </span>
-                    <span className="text-lg font-bold text-black">
+                    <span className="text-base font-bold text-black">
                       {Number(totalBull).toFixed(2)} ETH
                     </span>
                   </div>
@@ -372,7 +303,7 @@ export default function PoolDetailPage() {
                       <TrendingDown className="h-4 w-4" />
                       BEAR
                     </span>
-                    <span className="text-lg font-bold text-black">
+                    <span className="text-base font-bold text-black">
                       {Number(totalBear).toFixed(2)} ETH
                     </span>
                   </div>
@@ -384,7 +315,7 @@ export default function PoolDetailPage() {
                     <span>Bull: {bullPercentage.toFixed(1)}%</span>
                     <span>Bear: {bearPercentage.toFixed(1)}%</span>
                   </div>
-                  <div className="h-4 flex rounded-full overflow-hidden">
+                  <div className="h-3 flex rounded-full overflow-hidden">
                     <div
                       className="bg-green-500"
                       style={{ width: `${bullPercentage}%` }}
@@ -397,14 +328,14 @@ export default function PoolDetailPage() {
                 </div>
 
                 {/* Odds */}
-                <div className="bg-gray-50 rounded-lg p-3">
+                <div className="bg-gray-50 rounded-xl p-3">
                   <p className="text-xs text-gray-600 mb-2">Current Odds</p>
                   <div className="flex items-center justify-between">
                     <div className="text-center">
                       <p className="text-sm font-semibold text-green-600">
                         BULL
                       </p>
-                      <p className="text-lg font-bold text-black">
+                      <p className="text-base font-bold text-black">
                         {totalBull > 0
                           ? Number(totalPool / totalBull).toFixed(2)
                           : "0.00"}
@@ -413,7 +344,7 @@ export default function PoolDetailPage() {
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-semibold text-red-600">BEAR</p>
-                      <p className="text-lg font-bold text-black">
+                      <p className="text-base font-bold text-black">
                         {totalBear > 0
                           ? Number(totalPool / totalBear).toFixed(2)
                           : "0.00"}
@@ -427,10 +358,10 @@ export default function PoolDetailPage() {
           </div>
 
           {/* Center Panel - Charts */}
-          <div className="lg:col-span-5 space-y-6">
+          <div className="lg:col-span-5 space-y-5">
             {/* Price Chart */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-bold text-black mb-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+              <h2 className="text-base font-bold text-black mb-4">
                 Price Movement
               </h2>
               <ResponsiveContainer width="100%" height={250}>
@@ -445,7 +376,7 @@ export default function PoolDetailPage() {
                     contentStyle={{
                       backgroundColor: "#fff",
                       border: "1px solid #E5E7EB",
-                      borderRadius: "8px",
+                      borderRadius: "12px",
                     }}
                   />
                   <Line
@@ -467,7 +398,7 @@ export default function PoolDetailPage() {
               </ResponsiveContainer>
               <div className="flex items-center justify-center gap-4 mt-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-0.5 bg-blue-500" />
+                  <div className="w-4 h-0.5 bg-blue-500 rounded-full" />
                   <span className="text-gray-600">Current Price</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -478,8 +409,8 @@ export default function PoolDetailPage() {
             </div>
 
             {/* Volume Chart */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-bold text-black mb-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+              <h2 className="text-base font-bold text-black mb-4">
                 Bull/Bear Distribution
               </h2>
               <ResponsiveContainer width="100%" height={250}>
@@ -494,7 +425,7 @@ export default function PoolDetailPage() {
                     contentStyle={{
                       backgroundColor: "#fff",
                       border: "1px solid #E5E7EB",
-                      borderRadius: "8px",
+                      borderRadius: "12px",
                     }}
                   />
                   <Area
@@ -529,18 +460,18 @@ export default function PoolDetailPage() {
           </div>
 
           {/* Right Panel - Trading */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-5">
             {/* Trading Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-8">
-              <h2 className="text-lg font-bold text-black mb-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sticky top-8">
+              <h2 className="text-base font-bold text-black mb-4">
                 Place Your Bet
               </h2>
 
               {/* Side Toggle */}
-              <div className="flex gap-2 mb-6">
+              <div className="flex gap-2 mb-5">
                 <button
                   onClick={() => setSelectedSide("bull")}
-                  className={`flex-1 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-2.5 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
                     selectedSide === "bull"
                       ? "bg-green-500 text-white shadow-md"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -551,7 +482,7 @@ export default function PoolDetailPage() {
                 </button>
                 <button
                   onClick={() => setSelectedSide("bear")}
-                  className={`flex-1 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-2.5 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
                     selectedSide === "bear"
                       ? "bg-red-500 text-white shadow-md"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -575,13 +506,13 @@ export default function PoolDetailPage() {
                     value={betAmount}
                     onChange={(e) => setBetAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#BAD8B6] focus:border-[#BAD8B6] outline-none text-lg font-mono"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#BAD8B6] focus:border-[#BAD8B6] outline-none text-base font-mono"
                   />
                 </div>
               </div>
 
               {/* Fee Display */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4">
                 <div className="flex items-center justify-between text-sm mb-1">
                   <span className="text-gray-700">Current Fee</span>
                   <span className="font-semibold text-black">
@@ -601,7 +532,7 @@ export default function PoolDetailPage() {
 
               {/* Expected Shares */}
               {betAmount && (
-                <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                <div className="bg-gray-50 rounded-xl p-3 mb-4">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">You'll receive</span>
                     <span className="font-bold text-black">
@@ -632,7 +563,7 @@ export default function PoolDetailPage() {
               <button
                 onClick={handleMint}
                 disabled={!betAmount || parseFloat(betAmount) <= 0 || isLoading}
-                className={`w-full py-3 rounded-lg font-bold transition-all duration-200 flex items-center justify-center gap-2 mb-3 ${
+                className={`w-full py-2.5 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-2 mb-2.5 text-sm ${
                   selectedSide === "bull"
                     ? "bg-green-500 hover:bg-green-600 text-white"
                     : "bg-red-500 hover:bg-red-600 text-white"
@@ -649,7 +580,7 @@ export default function PoolDetailPage() {
                 <button
                   onClick={handleBurn}
                   disabled={isLoading}
-                  className="w-full py-2.5 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
+                  className="w-full py-2 border-2 border-gray-300 rounded-xl font-semibold text-sm text-gray-700 hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
                 >
                   {isLoading ? "Processing..." : "Burn Position"}
                 </button>
@@ -657,28 +588,32 @@ export default function PoolDetailPage() {
             </div>
 
             {/* Your Positions Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-bold text-black mb-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+              <h3 className="text-base font-bold text-black mb-4">
                 Your Positions
               </h3>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-green-600" />
-                    <span className="font-semibold text-green-900">BULL</span>
+                    <span className="font-semibold text-sm text-green-900">
+                      BULL
+                    </span>
                   </div>
-                  <span className="font-bold text-black">
+                  <span className="font-bold text-sm text-black">
                     {Number(bullShares)?.toFixed(4)} ETH
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
                   <div className="flex items-center gap-2">
                     <TrendingDown className="h-4 w-4 text-red-600" />
-                    <span className="font-semibold text-red-900">BEAR</span>
+                    <span className="font-semibold text-sm text-red-900">
+                      BEAR
+                    </span>
                   </div>
-                  <span className="font-bold text-black">
+                  <span className="font-bold text-sm text-black">
                     {Number(bearShares)?.toFixed(4)} ETH
                   </span>
                 </div>
@@ -688,7 +623,7 @@ export default function PoolDetailPage() {
                 <button
                   onClick={handleClaim}
                   disabled={isLoading}
-                  className="w-full mt-4 py-3 bg-[#BAD8B6] hover:bg-[#9CC499] text-black font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full mt-3.5 py-2.5 bg-[#BAD8B6] hover:bg-[#9CC499] text-black font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                 >
                   <CheckCircle className="h-5 w-5" />
                   {isLoading ? "Processing..." : "Claim Rewards"}
