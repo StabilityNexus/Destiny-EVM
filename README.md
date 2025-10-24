@@ -1,11 +1,7 @@
 # Destiny-EVM
 
-<img width="1470" height="956" alt="Screenshot 2025-08-07 at 10 46 42 AM" src="https://github.com/user-attachments/assets/d61cf352-1159-43ab-8ad4-3299b3329d4f" />
-<img width="1470" height="956" alt="Screenshot 2025-08-07 at 10 47 12 AM" src="https://github.com/user-attachments/assets/239a5a66-2829-4664-9d85-3c73db061e5b" />
-<img width="1470" height="956" alt="Screenshot 2025-08-07 at 10 47 19 AM" src="https://github.com/user-attachments/assets/08ee2710-fbf7-48b4-88af-3f6e42af6995" />
-<img width="1470" height="956" alt="Screenshot 2025-08-07 at 10 47 47 AM" src="https://github.com/user-attachments/assets/d3386dc1-c3d1-42a1-8c82-0c306c607353" />
-
-## Try contracts on temporary endpoints for now
-<img width="1470" height="956" alt="Screenshot 2025-08-07 at 10 48 42 AM" src="https://github.com/user-attachments/assets/1890dd69-9ccf-40f8-8d52-f6f796b4d30f" />
-<img width="1470" height="956" alt="Screenshot 2025-08-07 at 10 49 41 AM" src="https://github.com/user-attachments/assets/8c1da38a-a98f-4fcd-a11a-026478e987b1" />
-<img width="1470" height="956" alt="Screenshot 2025-08-07 at 10 49 59 AM" src="https://github.com/user-attachments/assets/e459e035-71f4-48cd-b50b-9dcded0f3001" />
+<img width="1470" height="882" alt="Screenshot 2025-10-24 at 9 09 36 AM" src="https://github.com/user-attachments/assets/7fe8e022-927b-451d-8ea2-a808a99f6086" />
+<img width="1470" height="883" alt="Screenshot 2025-10-24 at 9 09 57 AM" src="https://github.com/user-attachments/assets/aabc7e87-b6c9-4bb2-8ab0-a957e6437de4" />
+<img width="1470" height="884" alt="Screenshot 2025-10-24 at 9 10 26 AM" src="https://github.com/user-attachments/assets/a64a0f48-6d5b-4be3-b6f1-5b260c415c58" />
+<img width="1470" height="883" alt="Screenshot 2025-10-24 at 9 10 38 AM" src="https://github.com/user-attachments/assets/111893cd-1b53-4cbb-a6ee-bfffa3d17d6f" />
+<img width="1470" height="882" alt="Screenshot 2025-10-24 at 9 11 10 AM" src="https://github.com/user-attachments/assets/18f535e8-b02a-463a-8e5f-936ba69c0ccb" />
