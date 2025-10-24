@@ -441,7 +441,7 @@ export default function FactoryTryPage() {
               {allPools.map((addr, index) => (
                 <a
                   key={addr}
-                  href={`/try-contracts/pools/${addr}`}
+                  href={`/app/pool/${addr}`}
                   className="group flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-md"
                 >
                   <div className="flex items-center gap-3">

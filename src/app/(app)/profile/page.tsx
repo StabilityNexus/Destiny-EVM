@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useWalletStore } from "@/store/walletStore";
+import { useAccount } from "wagmi";
 import {
   Card,
   CardContent,
@@ -14,12 +14,28 @@ import { Button } from "@/components/ui/button";
 import { Timer, Rocket, Copy, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
 import copy from "copy-to-clipboard";
-import { useAllPools } from "@/lib/web3/factory";
+import {
+  useAllPools,
+  useGetPoolsByCreator,
+  useGetPoolsByCreatorCount,
+} from "@/lib/web3/factory";
 
 export default function ProfilePage() {
-  const { isConnected, address, setAddress } = useWalletStore();
-  const { allPools, isLoading } = useAllPools();
+  const { address, isConnected } = useAccount();
   const [countdowns, setCountdowns] = useState<Record<string, string>>({});
+
+  // Fetch pools created by this user
+  const { pools: userPools, isLoading: userPoolsLoading } =
+    useGetPoolsByCreator(address as `0x${string}`, BigInt(0), BigInt(50));
+
+  const { count: userPoolCount, isLoading: countLoading } =
+    useGetPoolsByCreatorCount(address as `0x${string}`);
+
+  // Optionally, fetch all pools for reference
+  const { allPools, isLoading: allPoolsLoading } = useAllPools(
+    BigInt(0),
+    BigInt(50)
+  );
 
   const formatDetailedCountdown = (deadline: Date) => {
     const now = new Date().getTime();
@@ -38,23 +54,20 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    if (isConnected && address) {
-      setAddress(address);
-    }
-  }, [isConnected, address, setAddress]);
+    if (!userPools || userPools.length === 0) return;
 
-  useEffect(() => {
     const interval = setInterval(() => {
       const newCountdowns: Record<string, string> = {};
-      (allPools || []).forEach((pool, idx) => {
-        const deadline = new Date(); // Replace with actual deadline if available
-        newCountdowns[idx] = formatDetailedCountdown(deadline);
+      userPools.forEach((pool, idx) => {
+        // Replace with actual deadline from pool data when available
+        const deadline = new Date(Date.now() + 1000000000);
+        newCountdowns[pool] = formatDetailedCountdown(deadline);
       });
       setCountdowns(newCountdowns);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [allPools]);
+  }, [userPools]);
 
   const handleCopy = () => {
     if (address) {
@@ -63,7 +76,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (!isConnected) {
+  if (!isConnected || !address) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Card className="w-[90%] max-w-md bg-white/80 backdrop-blur-sm shadow-xl">
@@ -79,6 +92,8 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  const isLoading = userPoolsLoading || countLoading;
 
   return (
     <div className="min-h-screen bg-[#F9F6E6] p-8">
@@ -98,17 +113,20 @@ export default function ProfilePage() {
               <ExternalLink className="w-4 h-4" />
             </a>
           </div>
+          <p className="mt-4 text-lg font-medium">
+            Total Pools Created: {userPoolCount?.toString() || "0"}
+          </p>
         </div>
 
         {isLoading && (
           <div className="text-center mt-8 text-lg font-medium">
-            Loading pools...
+            Loading your pools...
           </div>
         )}
 
-        {!isLoading && allPools && allPools.length > 0 && (
+        {!isLoading && userPools && userPools.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {allPools.map((pool, index) => (
+            {userPools.map((pool, index) => (
               <Card
                 key={pool}
                 className="bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all"
@@ -138,7 +156,7 @@ export default function ProfilePage() {
 
                     <div className="flex items-center justify-between mt-4 text-sm">
                       <Timer className="h-4 w-4" />
-                      <span>{countdowns[index] || "Loading..."}</span>
+                      <span>{countdowns[pool] || "Loading..."}</span>
                     </div>
 
                     <Button className="w-full bg-[#BAD8B6] hover:bg-[#9DC88E]">
@@ -152,12 +170,12 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {!isLoading && (!allPools || allPools.length === 0) && (
+        {!isLoading && (!userPools || userPools.length === 0) && (
           <Card className="mt-8 bg-white/80 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-center">No Pools Found</CardTitle>
               <CardDescription className="text-center">
-                You haven't created or interacted with any prediction pools yet.
+                You haven't created any prediction pools yet.
               </CardDescription>
             </CardHeader>
           </Card>

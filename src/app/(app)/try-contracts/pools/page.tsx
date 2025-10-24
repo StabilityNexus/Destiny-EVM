@@ -31,7 +31,7 @@ function PoolCard({ address }: { address: `0x${string}` }) {
   const { metadata } = usePoolMetadata(address);
 
   return (
-    <Link href={`/try-contracts/pools/${address}`}>
+    <Link href={`/app/pool/${address}`}>
       <div className="bg-white border p-4 rounded-xl shadow hover:bg-[#FAFAF0] transition">
         <h2 className="font-semibold text-lg">{typeof metadata?.tokenPair === "string" ? metadata.tokenPair : "Loading..."}</h2>
         <p className="text-sm text-gray-700">Target: {metadata?.targetPrice?.toString() || "–"}</p>

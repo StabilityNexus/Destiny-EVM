@@ -70,7 +70,7 @@ const PoolCard = ({
   };
 
   const handleClick = () => {
-    router.push(`/try-contracts/pools/${address}`);
+    router.push(`/app/pool/${address}`);
   };
 
   if (viewMode === "list") {
