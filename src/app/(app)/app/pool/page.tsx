@@ -50,7 +50,7 @@ const MOCK_VOLUME_HISTORY = Array.from({ length: 24 }, (_, i) => ({
   bear: Math.random() * 5,
 }));
 
-const Countdown = ({ expiry }) => {
+const Countdown = ({ expiry }: { expiry: Number | undefined }) => {
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -61,7 +61,9 @@ const Countdown = ({ expiry }) => {
   useEffect(() => {
     const timer = setInterval(() => {
       const now = Date.now();
-      const diff = expiry - now;
+      if (!expiry) return;
+      // const expiryMs = Number(expiry); // Convert bigint to number
+      const diff = Number(expiry) - now;
 
       if (diff <= 0) {
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });

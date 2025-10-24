@@ -23,9 +23,7 @@ import {
   AreaChart,
 } from "recharts";
 import { useParams } from "next/navigation";
-import { useAccount, useReadContract } from "wagmi";
-import { formatEther, parseEther } from "viem/utils";
-import abi from "@/lib/contracts/abi/PredictionPool.json";
+import { useAccount } from "wagmi";
 import {
   usePoolMetadata,
   useGetUserShares,
@@ -94,21 +92,15 @@ export default function PoolDetailPage() {
 
   const { metadata } = usePoolMetadata(contract);
 
-  console.log("Pool Metadata:", metadata);
-
   const { bullShares, bearShares } = useGetUserShares(
     contract,
     userAddress || "0x0000000000000000000000000000000000000000"
   );
 
-  console.log("User Shares - Bull:", bullShares, "Bear:", bearShares);
-
   const { mint, burn, claim } = usePoolWrites(contract);
 
   const totalBull = bullShares;
   const totalBear = bearShares;
-
-  console.log("Total Bull Shares:", totalBull);
 
   const isExpired = metadata?.expiry
     ? Number(metadata.expiry) < Math.floor(Date.now() / 1000)
@@ -138,6 +130,11 @@ export default function PoolDetailPage() {
   const expectedShares = betAmount
     ? parseFloat(betAmount) * (1 - currentFee / 100)
     : 0;
+
+  // Convert tokenPair to string safely
+  const tokenPairDisplay = metadata?.tokenPair
+    ? String(metadata.tokenPair)
+    : "Loading...";
 
   const handleMint = async () => {
     if (!betAmount || parseFloat(betAmount) <= 0) return;
@@ -206,7 +203,7 @@ export default function PoolDetailPage() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h1 className="text-2xl font-bold text-black mb-1">
-                    {metadata.tokenPair}
+                    {tokenPairDisplay}
                   </h1>
                   <p className="text-sm text-gray-600">Prediction Pool</p>
                 </div>
@@ -217,7 +214,7 @@ export default function PoolDetailPage() {
               <div className="bg-gray-50 rounded-xl p-3.5 mb-3">
                 <p className="text-xs text-gray-600 mb-1">TARGET PRICE</p>
                 <p className="text-2xl font-bold text-black">
-                  ${targetPrice * 10 ** 8}
+                  ${(targetPrice * 10 ** 8).toLocaleString()}
                 </p>
               </div>
 
@@ -249,7 +246,7 @@ export default function PoolDetailPage() {
                   <Clock className="h-4 w-4" />
                   <span className="text-sm font-semibold">Time Remaining</span>
                 </div>
-                <Countdown expiry={metadata.expiry} />
+                <Countdown expiry={metadata.expiry as bigint | undefined} />
               </div>
 
               {/* Creator Info */}
@@ -534,7 +531,7 @@ export default function PoolDetailPage() {
               {betAmount && (
                 <div className="bg-gray-50 rounded-xl p-3 mb-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">You'll receive</span>
+                    <span className="text-gray-600">You&apos;ll receive</span>
                     <span className="font-bold text-black">
                       {expectedShares.toFixed(4)} ETH shares
                     </span>
