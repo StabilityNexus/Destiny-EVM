@@ -49,7 +49,6 @@ export default function FactoryTryPage() {
     }
   );
 
-  // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -104,7 +103,6 @@ export default function FactoryTryPage() {
   const isFormValid = tokenPair && targetPrice && expiry && creatorFee;
   const isFeedFormValid = tokenPair && feedAddress;
 
-  // Don't render dynamic content until mounted
   if (!mounted) {
     return (
       <div className="min-h-screen bg-[#FDFCF5] text-black py-8 px-4">
@@ -114,7 +112,7 @@ export default function FactoryTryPage() {
             <h1 className="text-5xl font-extrabold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
               Factory Playground
             </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-base text-gray-600 max-w-2xl mx-auto">
               Create and manage prediction pools with custom price feeds and
               parameters
             </p>
@@ -131,13 +129,13 @@ export default function FactoryTryPage() {
     <div className="min-h-screen bg-[#FDFCF5] text-black py-8 px-4">
       <div className="fixed inset-0 z-[-1] bg-[radial-gradient(circle_at_1px_1px,#EAEAEA_1px,transparent_0)] [background-size:20px_20px] opacity-30" />
 
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-            <Settings2Icon /> Factory Playground
+        <div className="text-center space-y-3">
+          <h1 className="text-4xl font-extrabold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+            Factory Playground
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base text-gray-600 max-w-2xl mx-auto">
             Create and manage prediction pools with custom price feeds and
             parameters
           </p>
@@ -154,34 +152,22 @@ export default function FactoryTryPage() {
           )}
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-5">
           {/* Set Price Feed Section */}
-          <section className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300">
-            <div className="flex items-center gap-3 mb-6">
+          <section className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                 <span className="text-xl">📊</span>
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Set Price Feed</h2>
+                <h2 className="text-xl font-bold">Set Price Feed</h2>
                 <p className="text-sm text-gray-600">
                   Configure oracle feeds for token pairs
                 </p>
               </div>
             </div>
 
-            <div className="space-y-4">
-              {/* <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Token Pair
-                </label>
-                <input
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-gray-400"
-                  placeholder="e.g. ETH/USD"
-                  value={tokenPair}
-                  onChange={(e) => setTokenPair(e.target.value)}
-                />
-              </div> */}
-
+            <div className="space-y-3.5">
               <PriceFeedSelector
                 tokenPair={tokenPair}
                 setTokenPair={setTokenPair}
@@ -189,12 +175,12 @@ export default function FactoryTryPage() {
                 setFeedAddress={setFeedAddress}
               />
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium text-gray-700">
                   Feed Address
                 </label>
                 <input
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-gray-400 font-mono text-sm"
+                  className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-gray-400 font-mono"
                   placeholder="0x..."
                   value={feedAddress}
                   onChange={(e) => setFeedAddress(e.target.value)}
@@ -202,7 +188,7 @@ export default function FactoryTryPage() {
               </div>
 
               <button
-                className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-200 ${
+                className={`w-full py-2.5 px-6 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   isFeedFormValid && !isLoading
                     ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 hover:shadow-lg transform hover:-translate-y-0.5"
                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
@@ -226,7 +212,7 @@ export default function FactoryTryPage() {
               </button>
 
               {currentFeed && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                   <div className="flex items-center gap-2 text-green-800">
                     <span className="text-sm">✅ Current feed:</span>
                     <span className="font-mono text-xs break-all">
@@ -239,38 +225,38 @@ export default function FactoryTryPage() {
           </section>
 
           {/* Create Prediction Pool Section */}
-          <section className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300">
-            <div className="flex items-center gap-3 mb-6">
+          <section className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
                 <span className="text-xl">🎯</span>
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Create Prediction Pool</h2>
+                <h2 className="text-xl font-bold">Create Prediction Pool</h2>
                 <p className="text-sm text-gray-600">
                   Set up a new prediction market
                 </p>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+            <div className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">
                     Target Price
                   </label>
                   <input
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400"
+                    className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400"
                     placeholder="e.g. 3000"
                     value={targetPrice}
                     onChange={(e) => setTargetPrice(e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">
                     Creator Fee (%)
                   </label>
                   <input
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400"
+                    className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400"
                     placeholder="50 = 0.5%"
                     value={creatorFee}
                     onChange={(e) => setCreatorFee(e.target.value)}
@@ -278,34 +264,32 @@ export default function FactoryTryPage() {
                 </div>
               </div>
 
-              {/* Ramp Start Section - Only visible if expiry is set */}
+              {/* Ramp Start Section */}
               {expiry && (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">
                     Ramp Start (optional)
                   </label>
 
-                  {/* Quick Preset Buttons */}
                   <div className="flex gap-2 flex-wrap">
                     {[
-                      { label: "1 hour before expiry", offset: 3600 },
-                      { label: "6 hours before expiry", offset: 3600 * 6 },
-                      { label: "12 hours before expiry", offset: 3600 * 12 },
-                      { label: "1 day before expiry", offset: 3600 * 24 },
-                      { label: "2 days before expiry", offset: 3600 * 24 * 2 },
+                      { label: "1h", offset: 3600 },
+                      { label: "6h", offset: 3600 * 6 },
+                      { label: "12h", offset: 3600 * 12 },
+                      { label: "1d", offset: 3600 * 24 },
+                      { label: "2d", offset: 3600 * 24 * 2 },
                     ].map(({ label, offset }) => {
                       const expiryTime = Number(expiry);
                       const timestamp = expiryTime - offset;
                       const now = Math.floor(Date.now() / 1000);
 
-                      // Only allow times in the future
                       if (timestamp <= now) return null;
 
                       return (
                         <button
                           key={label}
                           type="button"
-                          className="py-2 px-3 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
+                          className="py-1.5 px-3 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
                           onClick={() => {
                             setRampStart(timestamp.toString());
                             setRampStartDateTime(
@@ -315,16 +299,15 @@ export default function FactoryTryPage() {
                             );
                           }}
                         >
-                          {label}
+                          -{label}
                         </button>
                       );
                     })}
                   </div>
 
-                  {/* Optional manual datetime input */}
                   <input
                     type="datetime-local"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400 font-mono text-sm"
+                    className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400 font-mono"
                     value={rampStartDateTime}
                     onChange={(e) => {
                       const timestamp =
@@ -342,7 +325,6 @@ export default function FactoryTryPage() {
                       .slice(0, 16)}
                   />
 
-                  {/* Display selected ramp start */}
                   {rampStart && mounted && (
                     <p className="text-xs text-gray-500 mt-1">
                       ⏱️ {formatExpiryDate(rampStart)} (Ramp Start)
@@ -351,12 +333,12 @@ export default function FactoryTryPage() {
                 </div>
               )}
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium text-gray-700">
                   Expiry Time
                 </label>
                 <input
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400 font-mono text-sm"
+                  className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400 font-mono"
                   placeholder="UNIX timestamp"
                   value={expiry}
                   onChange={(e) => setExpiry(e.target.value)}
@@ -378,7 +360,7 @@ export default function FactoryTryPage() {
                   <button
                     key={label}
                     onClick={() => setRelativeExpiry(seconds)}
-                    className="py-2 px-3 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
+                    className="py-1.5 px-2.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
                   >
                     +{label}
                   </button>
@@ -386,7 +368,7 @@ export default function FactoryTryPage() {
               </div>
 
               <button
-                className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-200 ${
+                className={`w-full py-2.5 px-6 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   isFormValid && !isLoading
                     ? "bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 hover:shadow-lg transform hover:-translate-y-0.5"
                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
@@ -420,14 +402,14 @@ export default function FactoryTryPage() {
         </div>
 
         {/* Pool List Section */}
-        <section className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/50">
-          <div className="flex items-center justify-between mb-6">
+        <section className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50">
+          <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
                 <span className="text-xl">🏊‍♂️</span>
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Active Pools</h2>
+                <h2 className="text-xl font-bold">Active Pools</h2>
                 <p className="text-sm text-gray-600">
                   {allPools?.length || 0} pool
                   {allPools?.length !== 1 ? "s" : ""} available
@@ -437,12 +419,12 @@ export default function FactoryTryPage() {
           </div>
 
           {allPools?.length ? (
-            <div className="grid gap-3">
+            <div className="grid gap-2.5">
               {allPools.map((addr, index) => (
                 <a
                   key={addr}
                   href={`/app/pool/${addr}`}
-                  className="group flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-md"
+                  className="group flex items-center justify-between p-3.5 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-md"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">
@@ -463,10 +445,10 @@ export default function FactoryTryPage() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl text-gray-400">🏊‍♂️</span>
               </div>
-              <p className="text-gray-500 text-lg font-medium">
+              <p className="text-gray-500 text-base font-medium">
                 No pools created yet
               </p>
               <p className="text-gray-400 text-sm mt-1">
@@ -478,7 +460,7 @@ export default function FactoryTryPage() {
 
         {/* Transaction Status */}
         {txHash && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3.5">
             <div className="flex items-center gap-3">
               <div className="w-6 h-6 border-2 border-yellow-500/30 border-t-yellow-500 rounded-full animate-spin"></div>
               <div>
