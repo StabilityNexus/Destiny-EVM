@@ -89,6 +89,12 @@
           "internalType": "uint256",
           "name": "rampStart",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "initialLiquidity",
+          "type": "uint256"
         }
       ],
       "name": "PoolCreated",
@@ -168,7 +174,7 @@
           "type": "address"
         }
       ],
-      "stateMutability": "nonpayable",
+      "stateMutability": "payable",
       "type": "function"
     },
     {

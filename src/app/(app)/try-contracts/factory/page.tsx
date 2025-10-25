@@ -30,6 +30,7 @@ export default function FactoryTryPage() {
   const [rampStart, setRampStart] = useState("");
   const [rampStartDateTime, setRampStartDateTime] = useState<string>("");
   const [creatorFee, setCreatorFee] = useState("50");
+  const [initialLiquidity, setInitialLiquidity] = useState("0.001");
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -100,7 +101,10 @@ export default function FactoryTryPage() {
     if (selectedAddress) setFeedAddress(selectedAddress);
   };
 
-  const isFormValid = tokenPair && targetPrice && expiry && creatorFee;
+  const isLiquidityValid = initialLiquidity && Number(initialLiquidity) > 0;
+
+  const isFormValid =
+    tokenPair && targetPrice && expiry && creatorFee && isLiquidityValid;
   const isFeedFormValid = tokenPair && feedAddress;
 
   if (!mounted) {
@@ -239,6 +243,34 @@ export default function FactoryTryPage() {
             </div>
 
             <div className="space-y-3.5">
+              {/* Initial Liquidity Input */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">
+                  Initial Liquidity (ETH) *
+                </label>
+                <input
+                  className={`w-full px-3.5 py-2.5 text-sm bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 transition-all placeholder-gray-400 ${
+                    isLiquidityValid
+                      ? "border-gray-200 focus:ring-green-500 focus:border-transparent"
+                      : "border-red-300 focus:ring-red-500"
+                  }`}
+                  placeholder="e.g. 0.001 ETH"
+                  value={initialLiquidity}
+                  onChange={(e) => setInitialLiquidity(e.target.value)}
+                  type="number"
+                  step="0.0001"
+                  min="0.0001"
+                />
+                <p className="text-xs text-gray-500">
+                  💧 Any amount &gt; 0 ETH (split 50/50 between BULL/BEAR)
+                </p>
+                {!isLiquidityValid && initialLiquidity && (
+                  <p className="text-xs text-red-500">
+                    ⚠️ Must be greater than 0 ETH
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">
@@ -380,8 +412,9 @@ export default function FactoryTryPage() {
                         tokenPair,
                         BigInt(targetPrice),
                         BigInt(expiry),
-                        BigInt(rampStart || 0),
-                        BigInt(creatorFee)
+                        BigInt(rampStart || expiry),
+                        BigInt(creatorFee),
+                        initialLiquidity
                       ),
                     "Creating Pool"
                   )
@@ -394,7 +427,7 @@ export default function FactoryTryPage() {
                     Creating Pool...
                   </span>
                 ) : (
-                  "Create Prediction Pool"
+                  `Create Pool (${initialLiquidity} ETH)`
                 )}
               </button>
             </div>
