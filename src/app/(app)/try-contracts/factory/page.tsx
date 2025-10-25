@@ -6,7 +6,6 @@ import {
   useGetPriceFeed,
   useCreatePredictionPool,
   useAllPools,
-  useMinInitialLiquidity, // NEW: Import min liquidity hook
 } from "@/lib/web3/factory";
 import {
   Select,
@@ -20,7 +19,6 @@ import toast from "react-hot-toast";
 import { Settings2Icon } from "lucide-react";
 import { PRICE_FEEDS } from "@/lib/contracts/feeds";
 import PriceFeedSelector from "@/components/game/PriceFeedSelector";
-import { formatEther } from "viem/utils"; // NEW: For formatting ETH values
 
 export default function FactoryTryPage() {
   const { address } = useAccount();
@@ -32,7 +30,7 @@ export default function FactoryTryPage() {
   const [rampStart, setRampStart] = useState("");
   const [rampStartDateTime, setRampStartDateTime] = useState<string>("");
   const [creatorFee, setCreatorFee] = useState("50");
-  const [initialLiquidity, setInitialLiquidity] = useState("0.0001"); // NEW: Initial liquidity state
+  const [initialLiquidity, setInitialLiquidity] = useState("0.001");
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -40,7 +38,6 @@ export default function FactoryTryPage() {
   const createPredictionPool = useCreatePredictionPool();
   const { feedAddress: currentFeed } = useGetPriceFeed(tokenPair);
   const { allPools } = useAllPools();
-  const { minLiquidity } = useMinInitialLiquidity(); // NEW: Get minimum liquidity
 
   const chainId = useChainId();
   const feedsForChain = PRICE_FEEDS[chainId] || {};
@@ -104,21 +101,11 @@ export default function FactoryTryPage() {
     if (selectedAddress) setFeedAddress(selectedAddress);
   };
 
-  // NEW: Validate initial liquidity
-  const isLiquidityValid =
-    initialLiquidity &&
-    Number(initialLiquidity) > 0 &&
-    (!minLiquidity ||
-      Number(initialLiquidity) >= Number(formatEther(minLiquidity)));
+  const isLiquidityValid = initialLiquidity && Number(initialLiquidity) > 0;
 
   const isFormValid =
-    tokenPair && targetPrice && expiry && creatorFee && isLiquidityValid; // UPDATED
+    tokenPair && targetPrice && expiry && creatorFee && isLiquidityValid;
   const isFeedFormValid = tokenPair && feedAddress;
-
-  // NEW: Format minimum liquidity for display
-  const minLiquidityFormatted = minLiquidity
-    ? formatEther(minLiquidity)
-    : "0.0001";
 
   if (!mounted) {
     return (
@@ -256,7 +243,7 @@ export default function FactoryTryPage() {
             </div>
 
             <div className="space-y-3.5">
-              {/* NEW: Initial Liquidity Input */}
+              {/* Initial Liquidity Input */}
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-gray-700">
                   Initial Liquidity (ETH) *
@@ -267,20 +254,19 @@ export default function FactoryTryPage() {
                       ? "border-gray-200 focus:ring-green-500 focus:border-transparent"
                       : "border-red-300 focus:ring-red-500"
                   }`}
-                  placeholder={`Min: ${minLiquidityFormatted} ETH`}
+                  placeholder="e.g. 0.001 ETH"
                   value={initialLiquidity}
                   onChange={(e) => setInitialLiquidity(e.target.value)}
                   type="number"
                   step="0.0001"
-                  min={minLiquidityFormatted}
+                  min="0.0001"
                 />
                 <p className="text-xs text-gray-500">
-                  💧 Minimum: {minLiquidityFormatted} ETH (split 50/50 between
-                  BULL/BEAR)
+                  💧 Any amount &gt; 0 ETH (split 50/50 between BULL/BEAR)
                 </p>
                 {!isLiquidityValid && initialLiquidity && (
                   <p className="text-xs text-red-500">
-                    ⚠️ Must be at least {minLiquidityFormatted} ETH
+                    ⚠️ Must be greater than 0 ETH
                   </p>
                 )}
               </div>
@@ -426,9 +412,9 @@ export default function FactoryTryPage() {
                         tokenPair,
                         BigInt(targetPrice),
                         BigInt(expiry),
-                        BigInt(rampStart || expiry), // Default rampStart to expiry if not set
+                        BigInt(rampStart || expiry),
                         BigInt(creatorFee),
-                        initialLiquidity // UPDATED: Pass initial liquidity
+                        initialLiquidity
                       ),
                     "Creating Pool"
                   )
