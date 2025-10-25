@@ -6,6 +6,7 @@ import {
   useGetPriceFeed,
   useCreatePredictionPool,
   useAllPools,
+  useMinInitialLiquidity, // NEW: Import min liquidity hook
 } from "@/lib/web3/factory";
 import {
   Select,
@@ -19,6 +20,7 @@ import toast from "react-hot-toast";
 import { Settings2Icon } from "lucide-react";
 import { PRICE_FEEDS } from "@/lib/contracts/feeds";
 import PriceFeedSelector from "@/components/game/PriceFeedSelector";
+import { formatEther } from "viem/utils"; // NEW: For formatting ETH values
 
 export default function FactoryTryPage() {
   const { address } = useAccount();
@@ -30,6 +32,7 @@ export default function FactoryTryPage() {
   const [rampStart, setRampStart] = useState("");
   const [rampStartDateTime, setRampStartDateTime] = useState<string>("");
   const [creatorFee, setCreatorFee] = useState("50");
+  const [initialLiquidity, setInitialLiquidity] = useState("0.0001"); // NEW: Initial liquidity state
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -37,6 +40,7 @@ export default function FactoryTryPage() {
   const createPredictionPool = useCreatePredictionPool();
   const { feedAddress: currentFeed } = useGetPriceFeed(tokenPair);
   const { allPools } = useAllPools();
+  const { minLiquidity } = useMinInitialLiquidity(); // NEW: Get minimum liquidity
 
   const chainId = useChainId();
   const feedsForChain = PRICE_FEEDS[chainId] || {};
@@ -100,8 +104,21 @@ export default function FactoryTryPage() {
     if (selectedAddress) setFeedAddress(selectedAddress);
   };
 
-  const isFormValid = tokenPair && targetPrice && expiry && creatorFee;
+  // NEW: Validate initial liquidity
+  const isLiquidityValid =
+    initialLiquidity &&
+    Number(initialLiquidity) > 0 &&
+    (!minLiquidity ||
+      Number(initialLiquidity) >= Number(formatEther(minLiquidity)));
+
+  const isFormValid =
+    tokenPair && targetPrice && expiry && creatorFee && isLiquidityValid; // UPDATED
   const isFeedFormValid = tokenPair && feedAddress;
+
+  // NEW: Format minimum liquidity for display
+  const minLiquidityFormatted = minLiquidity
+    ? formatEther(minLiquidity)
+    : "0.0001";
 
   if (!mounted) {
     return (
@@ -239,6 +256,35 @@ export default function FactoryTryPage() {
             </div>
 
             <div className="space-y-3.5">
+              {/* NEW: Initial Liquidity Input */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">
+                  Initial Liquidity (ETH) *
+                </label>
+                <input
+                  className={`w-full px-3.5 py-2.5 text-sm bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 transition-all placeholder-gray-400 ${
+                    isLiquidityValid
+                      ? "border-gray-200 focus:ring-green-500 focus:border-transparent"
+                      : "border-red-300 focus:ring-red-500"
+                  }`}
+                  placeholder={`Min: ${minLiquidityFormatted} ETH`}
+                  value={initialLiquidity}
+                  onChange={(e) => setInitialLiquidity(e.target.value)}
+                  type="number"
+                  step="0.0001"
+                  min={minLiquidityFormatted}
+                />
+                <p className="text-xs text-gray-500">
+                  💧 Minimum: {minLiquidityFormatted} ETH (split 50/50 between
+                  BULL/BEAR)
+                </p>
+                {!isLiquidityValid && initialLiquidity && (
+                  <p className="text-xs text-red-500">
+                    ⚠️ Must be at least {minLiquidityFormatted} ETH
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">
@@ -380,8 +426,9 @@ export default function FactoryTryPage() {
                         tokenPair,
                         BigInt(targetPrice),
                         BigInt(expiry),
-                        BigInt(rampStart || 0),
-                        BigInt(creatorFee)
+                        BigInt(rampStart || expiry), // Default rampStart to expiry if not set
+                        BigInt(creatorFee),
+                        initialLiquidity // UPDATED: Pass initial liquidity
                       ),
                     "Creating Pool"
                   )
@@ -394,7 +441,7 @@ export default function FactoryTryPage() {
                     Creating Pool...
                   </span>
                 ) : (
-                  "Create Prediction Pool"
+                  `Create Pool (${initialLiquidity} ETH)`
                 )}
               </button>
             </div>

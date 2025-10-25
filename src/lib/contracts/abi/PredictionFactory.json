@@ -89,6 +89,12 @@
           "internalType": "uint256",
           "name": "rampStart",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "initialLiquidity",
+          "type": "uint256"
         }
       ],
       "name": "PoolCreated",
@@ -112,6 +118,19 @@
       ],
       "name": "PriceFeedSet",
       "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "MIN_INITIAL_LIQUIDITY",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
       "inputs": [
@@ -168,7 +187,7 @@
           "type": "address"
         }
       ],
-      "stateMutability": "nonpayable",
+      "stateMutability": "payable",
       "type": "function"
     },
     {
@@ -206,6 +225,19 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getMinInitialLiquidity",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
       "type": "function"
     },
     {

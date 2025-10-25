@@ -9,12 +9,14 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  Info,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAllPools } from "@/lib/web3/factory";
-import { usePoolMetadata } from "@/lib/web3/pool";
+import { usePoolMetadata, usePoolState } from "@/lib/web3/pool";
 import { useTimer } from "react-timer-hook";
 import { Button } from "../ui/button";
+import { formatEther } from "viem/utils";
 
 const Countdown = ({ expiry }: { expiry: bigint }) => {
   const { seconds, minutes, hours, days, isRunning } = useTimer({
@@ -44,13 +46,20 @@ const PoolCard = ({
   address,
   viewMode,
   preloadedMetadata,
+  preloadedPoolState,
 }: {
   address: `0x${string}`;
   viewMode: "grid" | "list";
   preloadedMetadata?: any;
+  preloadedPoolState?: any;
 }) => {
   const { metadata: hookMetadata } = usePoolMetadata(address);
+  const { state: hookPoolState } = usePoolState(address);
+
   const metadata = preloadedMetadata ?? hookMetadata;
+  const poolState = preloadedPoolState ?? hookPoolState;
+
+  console.log("Rendering PoolCard for", address, { metadata, poolState });
 
   const router = useRouter();
   const isExpired = metadata
@@ -60,12 +69,24 @@ const PoolCard = ({
   const handleBetClick = (e: React.MouseEvent, type: "bull" | "bear") => {
     e.stopPropagation();
     if (isExpired) return;
-    // Handle bet logic...
+    // Navigate to pool page with the selected side pre-filled
+    router.push(`/app/pool/${address}?side=${type}`);
   };
 
   const handleClick = () => {
     router.push(`/app/pool/${address}`);
   };
+
+  // Calculate TVL and percentages
+  const totalBull = poolState?.bullReserve || BigInt(0);
+  const totalBear = poolState?.bearReserve || BigInt(0);
+  const tvl = poolState?.tvl || totalBull + totalBear;
+  const totalPool = Number(tvl);
+
+  const bullPercentage =
+    totalPool > 0 ? (Number(totalBull) / totalPool) * 100 : 50;
+  const bearPercentage =
+    totalPool > 0 ? (Number(totalBear) / totalPool) * 100 : 50;
 
   if (viewMode === "list") {
     return (
@@ -86,7 +107,19 @@ const PoolCard = ({
                   <p className="text-sm text-gray-600">
                     Target:{" "}
                     <span className="font-semibold text-black">
-                      ${metadata?.targetPrice?.toString() || "—"}
+                      $
+                      {metadata?.targetPrice
+                        ? (Number(metadata.targetPrice) / 1e8).toLocaleString()
+                        : "—"}
+                    </span>
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Latest:{" "}
+                    <span className="font-semibold text-black">
+                      $
+                      {metadata?.targetPrice
+                        ? (Number(metadata.latestPrice) / 1e8).toLocaleString()
+                        : "—"}
                     </span>
                   </p>
                   <p className="text-sm text-gray-500">
@@ -96,7 +129,39 @@ const PoolCard = ({
                       : 0}
                     %
                   </p>
+                  {/* NEW: TVL Display */}
+                  {tvl > BigInt(0) && (
+                    <p className="text-sm text-gray-500">
+                      TVL:{" "}
+                      <span className="font-semibold text-black">
+                        {Number(formatEther(tvl)).toFixed(4)} ETH
+                      </span>
+                    </p>
+                  )}
                 </div>
+                {/* NEW: Bull/Bear Ratio Bar */}
+                {tvl > BigInt(0) && (
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
+                      <span className="text-green-600">
+                        Bull: {bullPercentage.toFixed(1)}%
+                      </span>
+                      <span className="text-red-600">
+                        Bear: {bearPercentage.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="h-2 flex rounded-full overflow-hidden bg-gray-100">
+                      <div
+                        className="bg-green-500"
+                        style={{ width: `${bullPercentage}%` }}
+                      />
+                      <div
+                        className="bg-red-500"
+                        style={{ width: `${bearPercentage}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-xl">
@@ -154,10 +219,43 @@ const PoolCard = ({
           <p className="text-sm text-gray-600">
             Target:{" "}
             <span className="font-semibold text-black">
-              ${metadata?.targetPrice?.toString() || "—"}
+              $
+              {metadata?.targetPrice
+                ? (Number(metadata.targetPrice) / 1e8).toLocaleString()
+                : "—"}
             </span>
           </p>
         </div>
+
+        {/* NEW: TVL and Stats */}
+        {tvl > BigInt(0) && (
+          <div className="bg-gray-50 rounded-xl p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-600">Total Value Locked</span>
+              <span className="text-sm font-bold text-black">
+                {Number(formatEther(tvl)).toFixed(4)} ETH
+              </span>
+            </div>
+            <div className="h-2 flex rounded-full overflow-hidden bg-gray-200">
+              <div
+                className="bg-green-500"
+                style={{ width: `${bullPercentage}%` }}
+              />
+              <div
+                className="bg-red-500"
+                style={{ width: `${bearPercentage}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between mt-1.5 text-xs">
+              <span className="text-green-600">
+                Bull {bullPercentage.toFixed(0)}%
+              </span>
+              <span className="text-red-600">
+                Bear {bearPercentage.toFixed(0)}%
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-xl">
@@ -204,17 +302,31 @@ const PoolCard = ({
 
 const MetadataLoader = ({
   address,
-  onUpdate,
+  onMetadataUpdate,
+  onPoolStateUpdate,
 }: {
   address: string;
-  onUpdate: (address: string, metadata: any) => void;
+  onMetadataUpdate: (address: string, metadata: any) => void;
+  onPoolStateUpdate: (address: string, poolState: any) => void;
 }) => {
   const { metadata } = usePoolMetadata(address as `0x${string}`);
+  const { state: poolState } = usePoolState(address as `0x${string}`);
+
   useEffect(() => {
     if (metadata) {
-      onUpdate(address, metadata);
+      onMetadataUpdate(address, metadata);
     }
-  }, [address, metadata ? JSON.stringify(metadata) : null, onUpdate]);
+  }, [address, metadata ? JSON.stringify(metadata) : null, onMetadataUpdate]);
+
+  useEffect(() => {
+    if (poolState) {
+      onPoolStateUpdate(address, poolState);
+    }
+  }, [
+    address,
+    poolState ? JSON.stringify(poolState) : null,
+    onPoolStateUpdate,
+  ]);
 
   return null;
 };
@@ -233,6 +345,7 @@ export const PredictionPoolsFeed = () => {
   const router = useRouter();
 
   const [metadataMap, setMetadataMap] = useState<Record<string, any>>({});
+  const [poolStateMap, setPoolStateMap] = useState<Record<string, any>>({});
 
   const handleMetadataUpdate = useCallback((address: string, metadata: any) => {
     setMetadataMap((prev) => {
@@ -243,6 +356,19 @@ export const PredictionPoolsFeed = () => {
       return { ...prev, [address]: metadata };
     });
   }, []);
+
+  const handlePoolStateUpdate = useCallback(
+    (address: string, poolState: any) => {
+      setPoolStateMap((prev) => {
+        const prevState = prev[address];
+        if (JSON.stringify(prevState) === JSON.stringify(poolState)) {
+          return prev;
+        }
+        return { ...prev, [address]: poolState };
+      });
+    },
+    []
+  );
 
   const perPage = 5;
 
@@ -261,6 +387,7 @@ export const PredictionPoolsFeed = () => {
       } else if (activeFilter === "expired" && md) {
         if (!isExpired) return false;
       } else if (activeFilter === "active" && !md) {
+        // Assume active if metadata not loaded yet
       } else if (activeFilter === "expired" && !md) {
         return false;
       }
@@ -273,8 +400,23 @@ export const PredictionPoolsFeed = () => {
       return true;
     });
 
+    // NEW: Sorting by volume
+    if (sortBy === "volume") {
+      filtered = filtered.sort((a, b) => {
+        const tvlA = poolStateMap[a]?.tvl || BigInt(0);
+        const tvlB = poolStateMap[b]?.tvl || BigInt(0);
+        return tvlB > tvlA ? 1 : tvlB < tvlA ? -1 : 0;
+      });
+    } else if (sortBy === "ending_soon") {
+      filtered = filtered.sort((a, b) => {
+        const expiryA = metadataMap[a]?.expiry || BigInt(0);
+        const expiryB = metadataMap[b]?.expiry || BigInt(0);
+        return expiryA > expiryB ? 1 : expiryA < expiryB ? -1 : 0;
+      });
+    }
+
     return filtered;
-  }, [allPools, metadataMap, activeFilter, searchQuery, sortBy]);
+  }, [allPools, metadataMap, poolStateMap, activeFilter, searchQuery, sortBy]);
 
   const paginatedPools = useMemo(
     () =>
@@ -444,6 +586,21 @@ export const PredictionPoolsFeed = () => {
                 </button>
               ))}
             </div>
+
+            {/* NEW: Sort Dropdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Sort by:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="px-3 py-1.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#BAD8B6] focus:border-[#BAD8B6] outline-none bg-white"
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="volume">Highest TVL</option>
+                <option value="ending_soon">Ending Soon</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -453,7 +610,8 @@ export const PredictionPoolsFeed = () => {
             <MetadataLoader
               key={addr}
               address={addr}
-              onUpdate={handleMetadataUpdate}
+              onMetadataUpdate={handleMetadataUpdate}
+              onPoolStateUpdate={handlePoolStateUpdate}
             />
           ))}
         </div>
@@ -504,6 +662,7 @@ export const PredictionPoolsFeed = () => {
                   address={address as `0x${string}`}
                   viewMode={viewMode}
                   preloadedMetadata={metadataMap[address]}
+                  preloadedPoolState={poolStateMap[address]}
                 />
               ))}
             </div>
