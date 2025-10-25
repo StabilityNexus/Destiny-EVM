@@ -113,7 +113,7 @@ const PoolCard = ({
           <div className="flex items-center gap-2.5 ml-6">
             {isExpired ? (
               <span className="text-sm text-red-600 font-semibold px-4 py-2">
-                Betting Closed
+                Predictions Closed
               </span>
             ) : (
               <>
@@ -176,7 +176,7 @@ const PoolCard = ({
         {isExpired ? (
           <div className="text-center py-2">
             <span className="text-sm text-red-600 font-semibold">
-              Betting Closed
+              Predictions Closed
             </span>
           </div>
         ) : (
@@ -374,10 +374,10 @@ export const PredictionPoolsFeed = () => {
 
           <div className="flex items-center gap-3">
             <Button
-              onClick={() => router.push("/try-contracts/factory")}
+              onClick={() => router.push("/app/create")}
               className="px-4 py-2 bg-[#BAD8B6] text-black font-semibold rounded-xl hover:bg-[#a7c8a3] transition-all duration-200"
             >
-              CREATE PREDICTION +
+              CREATE PREDICTION POOL +
             </Button>
 
             <div className="flex items-center bg-white rounded-xl p-1 border border-gray-200">
@@ -481,7 +481,7 @@ export const PredictionPoolsFeed = () => {
               </p>
               {!searchQuery && activeFilter === "all" && (
                 <button
-                  onClick={() => router.push("/try-contracts/factory")}
+                  onClick={() => router.push("/app/create")}
                   className="inline-flex items-center px-6 py-2.5 bg-black text-white text-sm font-semibold rounded-xl hover:bg-gray-900 transition-all duration-200"
                 >
                   Create First Pool
