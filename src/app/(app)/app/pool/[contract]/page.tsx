@@ -11,6 +11,7 @@ import {
   CheckCircle,
   ArrowUpRight,
   ArrowDownRight,
+  Info,
 } from "lucide-react";
 import {
   LineChart,
@@ -28,8 +29,12 @@ import {
   usePoolMetadata,
   useGetUserShares,
   usePoolWrites,
+  useTokenPrices, // NEW
+  usePoolState, // NEW
+  useUserPosition, // NEW
 } from "@/lib/web3/pool";
 import NotFoundPool from "@/components/game/NotFoundPool";
+import { formatEther } from "viem/utils";
 
 // Mock data for charts
 const MOCK_PRICE_HISTORY = Array.from({ length: 24 }, (_, i) => ({
@@ -83,7 +88,7 @@ const Countdown = ({ expiry }: { expiry: bigint | undefined }) => {
 };
 
 export default function PoolDetailPage() {
-  const [selectedSide, setSelectedSide] = useState("bull");
+  const [selectedSide, setSelectedSide] = useState<"bull" | "bear">("bull");
   const [betAmount, setBetAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -91,26 +96,39 @@ export default function PoolDetailPage() {
   const { address: userAddress } = useAccount();
 
   const { metadata } = usePoolMetadata(contract);
-
   const { bullShares, bearShares } = useGetUserShares(
     contract,
     userAddress || "0x0000000000000000000000000000000000000000"
   );
 
-  const { mint, burn, claim } = usePoolWrites(contract);
+  const { priceBuyBull, priceBuyBear, priceSellBull, priceSellBear } =
+    useTokenPrices(contract);
+  const { state: poolState } = usePoolState(contract);
+  const bullPosition = useUserPosition(contract, userAddress, "BULL");
+  const bearPosition = useUserPosition(contract, userAddress, "BEAR");
 
-  const totalBull = bullShares;
-  const totalBear = bearShares;
+  const { mint, burn, claimBull, claimBear } = usePoolWrites(contract);
+
+  // Use pool state data if available, fallback to individual queries
+  // Keep as bigint throughout
+  const totalBull = poolState?.bullReserve || bullShares || BigInt(0);
+  const totalBear = poolState?.bearReserve || bearShares || BigInt(0);
+  const currentTVL = poolState?.tvl || totalBull + totalBear;
+
+  console.log("Pool State:", poolState);
 
   const isExpired = metadata?.expiry
     ? Number(metadata.expiry) < Math.floor(Date.now() / 1000)
     : false;
 
+  // Keep totalPool as bigint, convert to Number only for calculations
   const totalPool = totalBull + totalBear;
+  const totalPoolNumber = Number(totalPool); // Convert once for calculations
+
   const bullPercentage =
-    totalPool > 0 ? Number((totalBull * BigInt(100)) / totalPool) : 50;
+    totalPoolNumber > 0 ? (Number(totalBull) * 100) / totalPoolNumber : 50;
   const bearPercentage =
-    totalPool > 0 ? Number((totalBear * BigInt(100)) / totalPool) : 50;
+    totalPoolNumber > 0 ? (Number(totalBear) * 100) / totalPoolNumber : 50;
 
   const targetPrice = metadata?.targetPrice
     ? Number(metadata.targetPrice) / 1e8
@@ -127,14 +145,32 @@ export default function PoolDetailPage() {
     ? Number(metadata.creatorFee) / 100
     : 0;
 
+  // NEW: Calculate expected shares using current token price (Fate model)
+  const getCurrentPrice = () => {
+    if (selectedSide === "bull") {
+      return priceBuyBull ? Number(priceBuyBull) / 10000 : 1; // Price is scaled by DENOMINATOR (10000)
+    } else {
+      return priceBuyBear ? Number(priceBuyBear) / 10000 : 1;
+    }
+  };
+
+  const currentPrice = getCurrentPrice();
   const expectedShares = betAmount
-    ? parseFloat(betAmount) * (1 - currentFee / 100)
+    ? (parseFloat(betAmount) * (1 - currentFee / 100)) / currentPrice
     : 0;
 
   // Convert tokenPair to string safely
   const tokenPairDisplay = metadata?.tokenPair
     ? String(metadata.tokenPair)
     : "Loading...";
+
+  // NEW: Determine winning side and if user won
+  const bullWins =
+    metadata?.snapshotPrice && metadata?.targetPrice
+      ? Number(metadata.snapshotPrice) > Number(metadata.targetPrice)
+      : current > targetPrice;
+
+  const userWon = bullWins ? bullShares > 0 : bearShares > 0;
 
   const handleMint = async () => {
     if (!betAmount || parseFloat(betAmount) <= 0) return;
@@ -151,6 +187,7 @@ export default function PoolDetailPage() {
     }
   };
 
+  // UPDATED: Burn now leaves dust behind to satisfy MIN_SUPPLY check
   const handleBurn = async () => {
     const shareAmount = selectedSide === "bull" ? bullShares : bearShares;
     if (!shareAmount || shareAmount <= 0) return;
@@ -158,7 +195,41 @@ export default function PoolDetailPage() {
     setIsLoading(true);
     try {
       const side = selectedSide === "bull" ? "BULL" : "BEAR";
-      await burn(side, shareAmount.toString());
+
+      // Calculate how much we can actually burn
+      // Leave behind MIN_SUPPLY (1e6 wei = 0.000001 shares) as dust
+      const MIN_SUPPLY = BigInt(1000000); // 1e6
+      const DUST_BUFFER = MIN_SUPPLY * BigInt(2); // Leave 2x MIN_SUPPLY to be safe
+
+      // Get total supply for this side
+      const totalSupply =
+        selectedSide === "bull"
+          ? poolState?.bullReserve || bullShares
+          : poolState?.bearReserve || bearShares;
+
+      // Calculate burnable amount
+      let burnableShares = shareAmount;
+
+      // If burning would leave less than DUST_BUFFER, reduce the burn amount
+      if (totalSupply - shareAmount < DUST_BUFFER) {
+        burnableShares = totalSupply - DUST_BUFFER;
+      }
+
+      // Make sure we're actually burning something
+      if (burnableShares <= 0) {
+        console.error("Cannot burn: would leave supply too low");
+        // toast.error("Amount too large. Leave some dust behind!");
+        return;
+      }
+
+      console.log({
+        totalSupply: totalSupply.toString(),
+        requestedBurn: shareAmount.toString(),
+        actualBurn: burnableShares.toString(),
+        remaining: (totalSupply - burnableShares).toString(),
+      });
+
+      await burn(side, burnableShares);
     } catch (error) {
       console.error("Burn failed:", error);
     } finally {
@@ -166,10 +237,15 @@ export default function PoolDetailPage() {
     }
   };
 
+  // UPDATED: Use specific claim functions based on winning side
   const handleClaim = async () => {
     setIsLoading(true);
     try {
-      await claim();
+      if (bullWins) {
+        await claimBull(); // NEW: Specific function for BULL winners
+      } else {
+        await claimBear(); // NEW: Specific function for BEAR winners
+      }
     } catch (error) {
       console.error("Claim failed:", error);
     } finally {
@@ -191,6 +267,25 @@ export default function PoolDetailPage() {
       </div>
     );
   }
+
+  // Add this before the return statement, after your other calculations
+  const calculatePotentialReturn = () => {
+    if (!betAmount || expectedShares === 0) return "0.0000";
+
+    if (selectedSide === "bull" && totalBull > 0) {
+      const multiplier = Number(
+        formatEther(((totalBull + totalBear) * BigInt(1e18)) / totalBull)
+      );
+      return (expectedShares * multiplier).toFixed(4);
+    } else if (selectedSide === "bear" && totalBear > 0) {
+      const multiplier = Number(
+        formatEther(((totalBull + totalBear) * BigInt(1e18)) / totalBear)
+      );
+      return (expectedShares * multiplier).toFixed(4);
+    }
+
+    return "0.0000";
+  };
 
   return (
     <div className="min-h-screen bg-[#FDFCF5] py-8 px-4">
@@ -279,7 +374,7 @@ export default function PoolDetailPage() {
                       Total Pool Value
                     </span>
                     <span className="text-lg font-bold text-black">
-                      {Number(totalPool).toFixed(2)} ETH
+                      {Number(formatEther(currentTVL)).toFixed(4)} ETH
                     </span>
                   </div>
                 </div>
@@ -292,7 +387,7 @@ export default function PoolDetailPage() {
                       BULL
                     </span>
                     <span className="text-base font-bold text-black">
-                      {Number(totalBull).toFixed(2)} ETH
+                      {Number(formatEther(totalBull)).toFixed(4)} ETH
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -301,7 +396,7 @@ export default function PoolDetailPage() {
                       BEAR
                     </span>
                     <span className="text-base font-bold text-black">
-                      {Number(totalBear).toFixed(2)} ETH
+                      {Number(formatEther(totalBear)).toFixed(4)} ETH
                     </span>
                   </div>
                 </div>
@@ -324,9 +419,39 @@ export default function PoolDetailPage() {
                   </div>
                 </div>
 
+                {/* NEW: Token Prices */}
+                <div className="bg-blue-50 rounded-xl p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Info className="h-4 w-4 text-blue-600" />
+                    <p className="text-xs text-blue-900 font-semibold">
+                      Token Prices
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600">
+                        BULL Buy Price
+                      </span>
+                      <span className="text-sm font-bold text-black">
+                        {(Number(priceBuyBull) / 10000).toFixed(4)} ETH
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600">
+                        BEAR Buy Price
+                      </span>
+                      <span className="text-sm font-bold text-black">
+                        {(Number(priceBuyBear) / 10000).toFixed(4)} ETH
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Odds */}
                 <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-600 mb-2">Current Odds</p>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Potential Returns
+                  </p>
                   <div className="flex items-center justify-between">
                     <div className="text-center">
                       <p className="text-sm font-semibold text-green-600">
@@ -334,7 +459,12 @@ export default function PoolDetailPage() {
                       </p>
                       <p className="text-base font-bold text-black">
                         {totalBull > 0
-                          ? Number(totalPool / totalBull).toFixed(2)
+                          ? Number(
+                              formatEther(
+                                ((totalBull + totalBear) * BigInt(1e18)) /
+                                  totalBull
+                              )
+                            ).toFixed(2)
                           : "0.00"}
                         x
                       </p>
@@ -343,7 +473,12 @@ export default function PoolDetailPage() {
                       <p className="text-sm font-semibold text-red-600">BEAR</p>
                       <p className="text-base font-bold text-black">
                         {totalBear > 0
-                          ? Number(totalPool / totalBear).toFixed(2)
+                          ? Number(
+                              formatEther(
+                                ((totalBull + totalBear) * BigInt(1e18)) /
+                                  totalBear
+                              )
+                            ).toFixed(2)
                           : "0.00"}
                         x
                       </p>
@@ -527,30 +662,24 @@ export default function PoolDetailPage() {
                 </p>
               </div>
 
-              {/* Expected Shares */}
               {betAmount && (
                 <div className="bg-gray-50 rounded-xl p-3 mb-4">
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-sm mb-1">
                     <span className="text-gray-600">You&apos;ll receive</span>
                     <span className="font-bold text-black">
-                      {expectedShares.toFixed(4)} ETH shares
+                      {expectedShares.toFixed(6)} shares
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-600">
+                    <span>Current price</span>
+                    <span className="font-semibold">
+                      {currentPrice.toFixed(6)} ETH/share
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-600 mt-1">
                     <span>Potential return</span>
-                    <span className="font-semibold">
-                      {selectedSide === "bull"
-                        ? totalBull > 0
-                          ? (
-                              expectedShares * Number(totalPool / totalBull)
-                            ).toFixed(4)
-                          : "0.0000"
-                        : totalBear > 0
-                        ? (
-                            expectedShares * Number(totalPool / totalBear)
-                          ).toFixed(4)
-                        : "0.0000"}{" "}
-                      ETH
+                    <span className="font-semibold text-green-600">
+                      {calculatePotentialReturn()} ETH
                     </span>
                   </div>
                 </div>
@@ -598,9 +727,15 @@ export default function PoolDetailPage() {
                       BULL
                     </span>
                   </div>
-                  <span className="font-bold text-sm text-black">
-                    {Number(bullShares)?.toFixed(4)} ETH
-                  </span>
+                  <div className="text-right">
+                    <p className="font-bold text-sm text-black">
+                      {Number(formatEther(bullShares))?.toFixed(6)} shares
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      ≈ {Number(formatEther(bullPosition.value))?.toFixed(4)}{" "}
+                      ETH
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
@@ -610,21 +745,39 @@ export default function PoolDetailPage() {
                       BEAR
                     </span>
                   </div>
-                  <span className="font-bold text-sm text-black">
-                    {Number(bearShares)?.toFixed(4)} ETH
-                  </span>
+                  <div className="text-right">
+                    <p className="font-bold text-sm text-black">
+                      {Number(formatEther(bearShares))?.toFixed(6)} shares
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      ≈ {Number(formatEther(bearPosition.value))?.toFixed(4)}{" "}
+                      ETH
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {isExpired && (bullShares > 0 || bearShares > 0) && (
+              {/* UPDATED: Only show claim if user won */}
+              {isExpired && userWon && (
                 <button
                   onClick={handleClaim}
                   disabled={isLoading}
                   className="w-full mt-3.5 py-2.5 bg-[#BAD8B6] hover:bg-[#9CC499] text-black font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                 >
                   <CheckCircle className="h-5 w-5" />
-                  {isLoading ? "Processing..." : "Claim Rewards"}
+                  {isLoading
+                    ? "Processing..."
+                    : `Claim ${bullWins ? "BULL" : "BEAR"} Rewards`}
                 </button>
+              )}
+
+              {/* Show loss message */}
+              {isExpired && !userWon && (bullShares > 0 || bearShares > 0) && (
+                <div className="mt-3.5 p-3 bg-gray-100 rounded-xl text-center">
+                  <p className="text-sm text-gray-600">
+                    {bullWins ? "BULL" : "BEAR"} side won this round
+                  </p>
+                </div>
               )}
             </div>
           </div>

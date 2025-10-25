@@ -61,6 +61,13 @@ export function usePoolMetadata(address?: `0x${string}`) {
     functionName: "fee",
   });
 
+  // NEW: Pool initialization status
+  const { data: initialized } = useReadContract({
+    abi,
+    address,
+    functionName: "initialized",
+  });
+
   return {
     metadata:
       tokenPair &&
@@ -79,12 +86,13 @@ export function usePoolMetadata(address?: `0x${string}`) {
           currentFee,
           snapshotPrice,
           snapshotTaken,
+          initialized, // NEW
         }
         : null,
   };
 }
 
-// ========== USER SHARES ==========
+// ========== USER SHARES (No changes) ==========
 
 export function useGetUserShares(address?: `0x${string}`, user?: string) {
   const enabled = !!address && !!user;
@@ -104,18 +112,141 @@ export function useGetUserShares(address?: `0x${string}`, user?: string) {
   });
 
   return {
-    bullShares: bullShares as bigint || BigInt(0),
-    bearShares: bearShares as bigint || BigInt(0)
+    bullShares: (bullShares as bigint) || BigInt(0),
+    bearShares: (bearShares as bigint) || BigInt(0),
   };
 }
 
-// ========== WRITE FUNCTIONS ==========
+// ========== NEW: PRICE HOOKS (FATE MODEL) ==========
+
+/**
+ * Get current buy/sell prices for BULL and BEAR tokens
+ */
+export function useTokenPrices(address?: `0x${string}`) {
+  const { data: priceBuyBull } = useReadContract({
+    abi,
+    address,
+    functionName: "priceBuyBull",
+  });
+
+  const { data: priceBuyBear } = useReadContract({
+    abi,
+    address,
+    functionName: "priceBuyBear",
+  });
+
+  const { data: priceSellBull } = useReadContract({
+    abi,
+    address,
+    functionName: "priceSellBull",
+  });
+
+  const { data: priceSellBear } = useReadContract({
+    abi,
+    address,
+    functionName: "priceSellBear",
+  });
+
+  return {
+    priceBuyBull: (priceBuyBull as bigint) || BigInt(0),
+    priceBuyBear: (priceBuyBear as bigint) || BigInt(0),
+    priceSellBull: (priceSellBull as bigint) || BigInt(0),
+    priceSellBear: (priceSellBear as bigint) || BigInt(0),
+  };
+}
+
+// ========== NEW: POOL STATE HOOK ==========
+
+/**
+ * Get comprehensive pool state in a single call
+ */
+export function usePoolState(address?: `0x${string}`) {
+  const { data, isLoading } = useReadContract({
+    abi,
+    address,
+    functionName: "getPoolState",
+  });
+
+  if (!data) {
+    return {
+      state: null,
+      isLoading,
+    };
+  }
+
+  const [bullReserve, bearReserve, bullPrice, bearPrice, currentFee, tvl] =
+    data as [bigint, bigint, bigint, bigint, bigint, bigint];
+
+  return {
+    state: {
+      bullReserve,
+      bearReserve,
+      bullPrice,
+      bearPrice,
+      currentFee,
+      tvl,
+    },
+    isLoading,
+  };
+}
+
+// ========== NEW: USER POSITION HOOK ==========
+
+/**
+ * Get user's position value and shares for a specific side
+ */
+export function useUserPosition(
+  address?: `0x${string}`,
+  user?: string,
+  side?: "BULL" | "BEAR"
+) {
+  const sideEnum = side === "BULL" ? 0 : 1;
+
+  const { data } = useReadContract({
+    abi,
+    address,
+    functionName: "getUserPosition",
+    args: user && side ? [user, sideEnum] : undefined,
+  });
+
+  if (!data) {
+    return {
+      shares: BigInt(0),
+      value: BigInt(0),
+    };
+  }
+
+  const [shares, value] = data as [bigint, bigint];
+
+  return { shares, value };
+}
+
+// ========== NEW: TVL HOOK ==========
+
+export function usePoolTVL(address?: `0x${string}`) {
+  const { data: tvl } = useReadContract({
+    abi,
+    address,
+    functionName: "getTVL",
+  });
+
+  return {
+    tvl: (tvl as bigint) || BigInt(0),
+  };
+}
+
+// ========== WRITE FUNCTIONS (UPDATED) ==========
 
 export function usePoolWrites(poolAddress?: `0x${string}`) {
   const { writeContractAsync } = useWriteContract();
   const { address: user } = useAccount();
   const enabled = !!poolAddress;
 
+  /**
+   * Mint shares (place bet)
+   * @param side "BULL" or "BEAR"
+   * @param amountEth Amount of ETH to send
+   */
   const mint = async (side: "BULL" | "BEAR", amountEth: string) => {
     if (!enabled) throw new Error("No pool address provided");
     const sideEnum = side === "BULL" ? 0 : 1;
@@ -130,19 +261,26 @@ export function usePoolWrites(poolAddress?: `0x${string}`) {
     });
   };
 
-  const burn = async (side: "BULL" | "BEAR", amountEth: string) => {
+  /**
+   * Burn shares (withdraw before expiry)
+   * @param side "BULL" or "BEAR"
+   * @param shares Number of shares to burn (not ETH amount!)
+   */
+  const burn = async (side: "BULL" | "BEAR", shares: bigint) => {
     if (!enabled) throw new Error("No pool address provided");
     const sideEnum = side === "BULL" ? 0 : 1;
-    const amount = parseEther(amountEth);
 
     return await writeContractAsync({
       address: poolAddress!,
       abi,
       functionName: "burn",
-      args: [sideEnum, amount],
+      args: [sideEnum, shares], // Changed: now expects shares (bigint), not ETH amount
     });
   };
 
+  /**
+   * Take snapshot of oracle price (after expiry)
+   */
   const takeSnapshot = async () => {
     if (!enabled) throw new Error("No pool address provided");
     return await writeContractAsync({
@@ -152,24 +290,39 @@ export function usePoolWrites(poolAddress?: `0x${string}`) {
     });
   };
 
-  const claim = async () => {
+  /**
+   * Claim BULL rewards (for winners)
+   * UPDATED: Now uses claimBull() instead of claim()
+   */
+  const claimBull = async () => {
     if (!enabled) throw new Error("No pool address provided");
     return await writeContractAsync({
       address: poolAddress!,
       abi,
-      functionName: "claim",
+      functionName: "claimBull", // CHANGED: was "claim"
     });
   };
 
-  const withdrawCreatorFee = async () => {
+  /**
+   * Claim BEAR rewards (for winners)
+   * NEW: Separate function for BEAR side
+   */
+  const claimBear = async () => {
     if (!enabled) throw new Error("No pool address provided");
     return await writeContractAsync({
       address: poolAddress!,
       abi,
-      functionName: "withdrawCreatorFee",
+      functionName: "claimBear", // NEW
     });
   };
 
-  return { mint, burn, takeSnapshot, claim, withdrawCreatorFee };
+  // REMOVED: withdrawCreatorFee (fees now auto-distributed in takeSnapshot)
+
+  return {
+    mint,
+    burn,
+    takeSnapshot,
+    claimBull,  // CHANGED: was "claim"
+    claimBear   // NEW
+  };
 }
-

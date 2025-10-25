@@ -4,7 +4,7 @@ import { Navigation } from "@/components/layout/Navigation";
 import { useWalletStore } from "@/store/walletStore";
 import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 export default function Home() {
   const router = useRouter();
@@ -16,62 +16,76 @@ export default function Home() {
       <Navigation />
 
       {/* Hero Section */}
-      <div className="flex flex-1 flex-col md:flex-row items-center justify-between px-8 md:px-24  pt-24 pb-12">
+      <div className="flex flex-1 flex-col md:flex-row items-center justify-between px-6 md:px-16 lg:px-24 pt-20 pb-16 gap-8">
         {/* Left: Headline and Actions */}
-        <div className="max-w-xl space-y-6">
-          <h1 className="text-5xl sm:text-6xl font-extrabold leading-tight tracking-tight">
+        <div className="max-w-xl space-y-5">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
             The first{" "}
-            <span className="bg-[#BAD8B6] px-2 pb-1 rounded-md">
+            <span className="bg-[#BAD8B6] px-2 pb-1 rounded-xl inline-block">
               decentralized
             </span>
             <br />
-            prediction protocol
+            prediction pool protocol
           </h1>
-          <p className="text-lg text-gray-700">
-            Empowering users to create and participate in on-chain prediction
-            pools.
-            <br />
-            Hedge risks, earn rewards, and join a transparent, unstoppable
-            ecosystem.
+          <p className="text-base lg:text-lg text-gray-700 leading-relaxed">
+            Empowering users to create and participate in on-chain
+            <br className="hidden sm:block" />
+            prediction pools. Hedge against risks. Insure yourself from
+            <br className="hidden sm:block" />
+            volatility. Profit from correct predictions.
           </p>
-          <div className="flex gap-4 mt-6">
+
+          <div className="flex gap-3 pt-2">
             <button
               onClick={() => router.push("/app")}
-              className="bg-black text-white px-6 py-3 rounded-lg font-semibold shadow hover:bg-gray-900 transition"
+              className="bg-black text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:bg-gray-900 hover:shadow-xl transition-all duration-200 hover:scale-[1.02]"
             >
               Get Started
             </button>
-            <button className="flex items-center gap-2 border border-black px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+            {/* <button className="flex items-center gap-2 border border-black px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-all duration-200">
               <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10" stroke="black" strokeWidth="2" />
                 <polygon points="10,8 16,12 10,16" fill="black" />
               </svg>
               Watch Video
-            </button>
+            </button> */}
           </div>
         </div>
 
         {/* Right: Custom Illustration */}
         <div className="hidden md:block">
-          {/* Replace with your SVG or animated illustration */}
-          {/* <img src="/your-illustration.svg" alt="Prediction Pool Illustration" className="w-96 h-96" /> */}
           <DotLottieReact
             src="https://lottie.host/6285668e-be28-4bcb-8354-049c37d602be/j6QJ2wZi3Z.lottie"
             loop
             autoplay
-            className="w-96 h-96"
+            className="w-80 h-80 lg:w-96 lg:h-96"
           />
         </div>
       </div>
 
       {/* Partner/Trust Bar */}
-      <div className="w-full bg-black py-4 flex justify-center gap-8 items-center">
-        <img src="/logos/coinbase.svg" alt="Coinbase" className="h-6" />
-        <img src="/logos/binance.svg" alt="Binance" className="h-6" />
-        <img src="/logos/uniswap.svg" alt="Uniswap" className="h-6" />
-        <img src="/logos/chainlink.svg" alt="Chainlink" className="h-6" />
-        {/* Add more logos as needed */}
+      <div className="w-full bg-black py-6 flex justify-center gap-12 items-center">
+        <img
+          src="/logos/coinbase.svg"
+          alt="Coinbase"
+          className="h-6 opacity-70 hover:opacity-100 transition-opacity"
+        />
+        <img
+          src="/logos/binance.svg"
+          alt="Binance"
+          className="h-6 opacity-70 hover:opacity-100 transition-opacity"
+        />
+        <img
+          src="/logos/uniswap.svg"
+          alt="Uniswap"
+          className="h-6 opacity-70 hover:opacity-100 transition-opacity"
+        />
+        <img
+          src="/logos/chainlink.svg"
+          alt="Chainlink"
+          className="h-6 opacity-70 hover:opacity-100 transition-opacity"
+        />
       </div>
     </div>
   );
-} 
+}
