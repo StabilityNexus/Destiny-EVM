@@ -70,11 +70,11 @@ const PoolCard = ({
     e.stopPropagation();
     if (isExpired) return;
     // Navigate to pool page with the selected side pre-filled
-    router.push(`/app/pool/${address}?side=${type}`);
+    router.push(`/app/pool?contract=${address}?side=${type}`);
   };
 
   const handleClick = () => {
-    router.push(`/app/pool/${address}`);
+    router.push(`/app/pool?contract=${address}`);
   };
 
   // Calculate TVL and percentages

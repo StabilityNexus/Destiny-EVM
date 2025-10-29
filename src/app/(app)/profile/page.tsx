@@ -52,7 +52,7 @@ const PoolCardSimple = ({
 
   return (
     <div
-      onClick={() => router.push(`/app/pool/${poolAddress}`)}
+      onClick={() => router.push(`/app/pool?contract=${poolAddress}`)}
       className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 cursor-pointer hover:shadow-md transition-all"
     >
       <div className="flex items-center justify-between mb-2">

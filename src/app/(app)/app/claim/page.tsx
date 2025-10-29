@@ -13,7 +13,7 @@ import {
   ExternalLink,
   Shield,
 } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 import {
   usePoolMetadata,
@@ -36,26 +36,37 @@ export default function ClaimPage() {
   const [txTitle, setTxTitle] = useState<string | undefined>();
   const [txDescription, setTxDescription] = useState<string | undefined>();
 
-  const { contract } = useParams<{ contract: `0x${string}` }>();
+  const searchParams = useSearchParams();
+  const contract = searchParams.get("contract") as `0x${string}` | null;
   const { address: userAddress } = useAccount();
   const router = useRouter();
 
-  const { metadata, refetch: refetchMetadata } = usePoolMetadata(contract);
+  // ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
+  const { metadata, refetch: refetchMetadata } = usePoolMetadata(
+    contract || "0x0000000000000000000000000000000000000000"
+  );
+
   const {
     bullShares,
     bearShares,
     refetch: refetchShares,
   } = useGetUserShares(
-    contract,
+    contract || "0x0000000000000000000000000000000000000000",
     userAddress || "0x0000000000000000000000000000000000000000"
   );
-  const { state: poolState, refetch: refetchPoolState } =
-    usePoolState(contract);
-  const { totalBullShares, totalBearShares } = useTotalShares(contract);
 
-  const { takeSnapshot, claimBull, claimBear } = usePoolWrites(contract);
+  const { state: poolState, refetch: refetchPoolState } = usePoolState(
+    contract || "0x0000000000000000000000000000000000000000"
+  );
 
-  // Watch for transaction confirmation
+  const { totalBullShares, totalBearShares } = useTotalShares(
+    contract || "0x0000000000000000000000000000000000000000"
+  );
+
+  const { takeSnapshot, claimBull, claimBear } = usePoolWrites(
+    contract || "0x0000000000000000000000000000000000000000"
+  );
+
   const {
     isLoading: isConfirming,
     isSuccess: isConfirmed,
@@ -65,7 +76,7 @@ export default function ClaimPage() {
     hash: txHash,
   });
 
-  // Update modal status based on transaction state
+  // ALL useEffect HOOKS
   useEffect(() => {
     if (isConfirming) {
       setTxStatus("pending");
@@ -79,6 +90,33 @@ export default function ClaimPage() {
     }
   }, [isConfirming, isConfirmed, isErrored, receiptError]);
 
+  useEffect(() => {
+    if (!contract) {
+      router.push("/app");
+    }
+  }, [contract, router]);
+
+  const isExpired = metadata?.expiry
+    ? Number(metadata.expiry) < Math.floor(Date.now() / 1000)
+    : false;
+
+  useEffect(() => {
+    if (metadata && !isExpired && contract) {
+      router.push(`/app/pool?contract=${contract}`);
+    }
+  }, [metadata, isExpired, contract, router]);
+
+  // NOW SAFE TO DO EARLY RETURNS
+  if (!contract) {
+    return (
+      <div className="min-h-screen bg-[#FDFCF5] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">No contract specified</p>
+        </div>
+      </div>
+    );
+  }
+
   const refetchAllData = async () => {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -89,17 +127,6 @@ export default function ClaimPage() {
       console.error("Error refetching data:", error);
     }
   };
-
-  const isExpired = metadata?.expiry
-    ? Number(metadata.expiry) < Math.floor(Date.now() / 1000)
-    : false;
-
-  // Redirect if not expired
-  useEffect(() => {
-    if (metadata && !isExpired) {
-      router.push(`/app/pool/${contract}`);
-    }
-  }, [metadata, isExpired, contract, router]);
 
   const snapshotTaken = metadata?.snapshotTaken || false;
   const isCreator =
