@@ -14,3 +14,8 @@ export const FACTORY_ADDRESSES: Record<number, `0x${string}`> = {
   11155111: "0x5F37c924cF233094B922b11EB64645067955EE84",
   80002: "0x0123319174Cf6D8DAcbBa0fDe1006c76691AFe87",
 }
+
+export const CHAIN_EXPLORER_URLS: Record<number, string> = {
+  11155111: "https://sepolia.etherscan.io",
+  80002: "https://amoy.polygonscan.com",
+}

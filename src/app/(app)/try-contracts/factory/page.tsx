@@ -7,16 +7,8 @@ import {
   useCreatePredictionPool,
   useAllPools,
 } from "@/lib/web3/factory";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAccount, useChainId, useWaitForTransactionReceipt } from "wagmi";
-import toast from "react-hot-toast";
-import { Settings2Icon } from "lucide-react";
+import { TransactionModal } from "@/components/modals";
 import { PRICE_FEEDS } from "@/lib/contracts/feeds";
 import PriceFeedSelector from "@/components/game/PriceFeedSelector";
 
@@ -31,57 +23,96 @@ export default function FactoryTryPage() {
   const [rampStartDateTime, setRampStartDateTime] = useState<string>("");
   const [creatorFee, setCreatorFee] = useState("50");
   const [initialLiquidity, setInitialLiquidity] = useState("0.001");
-  const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   const [mounted, setMounted] = useState(false);
+
+  // Transaction modal state
+  const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [txStatus, setTxStatus] = useState<
+    "idle" | "pending" | "success" | "error"
+  >("idle");
+  const [txError, setTxError] = useState<string | undefined>();
+  const [txTitle, setTxTitle] = useState<string | undefined>();
+  const [txDescription, setTxDescription] = useState<string | undefined>();
 
   const { setPriceFeed } = useSetPriceFeed();
   const createPredictionPool = useCreatePredictionPool();
-  const { feedAddress: currentFeed } = useGetPriceFeed(tokenPair);
-  const { allPools } = useAllPools();
+  const { feedAddress: currentFeed, refetch: refetchPriceFeed } =
+    useGetPriceFeed(tokenPair);
+  const { allPools, refetch: refetchAllPools } = useAllPools();
 
   const chainId = useChainId();
   const feedsForChain = PRICE_FEEDS[chainId] || {};
 
-  const { isLoading, isSuccess, isError, error } = useWaitForTransactionReceipt(
-    {
-      hash: txHash ?? undefined,
-      chainId: chainId,
-      confirmations: 1,
-    }
-  );
+  // Watch for transaction confirmation
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+    isError: isErrored,
+    error: receiptError,
+  } = useWaitForTransactionReceipt({
+    hash: txHash,
+  });
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Update modal status based on transaction state
   useEffect(() => {
-    if (isSuccess) {
-      toast.success("Transaction confirmed ✅");
-      setTxHash(null);
+    if (isConfirming) {
+      setTxStatus("pending");
+      setModalOpen(true);
+    } else if (isConfirmed) {
+      setTxStatus("success");
+      // Refresh all data after successful transaction
+      refetchAllData();
+    } else if (isErrored) {
+      setTxStatus("error");
+      setTxError(receiptError?.message || "Transaction failed");
     }
-  }, [isSuccess]);
+  }, [isConfirming, isConfirmed, isErrored, receiptError]);
 
-  useEffect(() => {
-    if (isError && error) {
-      toast.error(`Tx failed: ${error.message}`);
-      setTxHash(null);
-    }
-  }, [isError, error]);
-
-  const handleTx = async (
-    callback: () => Promise<`0x${string}`>,
-    label: string
-  ) => {
+  // Function to refetch all factory data
+  const refetchAllData = async () => {
     try {
-      toast.loading(`${label}...`);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await refetchPriceFeed();
+      await refetchAllPools();
+    } catch (error) {
+      console.error("Error refetching data:", error);
+    }
+  };
+
+  const handleTransaction = async (
+    callback: () => Promise<`0x${string}`>,
+    title: string,
+    description: string
+  ) => {
+    setTxTitle(title);
+    setTxDescription(description);
+    setTxStatus("pending");
+    setModalOpen(true);
+
+    try {
       const hash = await callback();
       setTxHash(hash);
-      toast.dismiss();
-      toast.success("Transaction sent!");
-    } catch (err: any) {
-      toast.dismiss();
-      toast.error(err.message || "Transaction failed");
+    } catch (error: any) {
+      console.error("Transaction failed:", error);
+      setTxStatus("error");
+      setTxError(
+        error?.shortMessage ||
+          error?.message ||
+          "Transaction was rejected or failed"
+      );
     }
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setTxHash(undefined);
+    setTxStatus("idle");
+    setTxError(undefined);
   };
 
   const setRelativeExpiry = (seconds: number) => {
@@ -102,10 +133,10 @@ export default function FactoryTryPage() {
   };
 
   const isLiquidityValid = initialLiquidity && Number(initialLiquidity) > 0;
-
   const isFormValid =
     tokenPair && targetPrice && expiry && creatorFee && isLiquidityValid;
   const isFeedFormValid = tokenPair && feedAddress;
+  const isTransactionPending = txStatus === "pending";
 
   if (!mounted) {
     return (
@@ -132,6 +163,22 @@ export default function FactoryTryPage() {
   return (
     <div className="min-h-screen bg-[#FDFCF5] text-black py-8 px-4">
       <div className="fixed inset-0 z-[-1] bg-[radial-gradient(circle_at_1px_1px,#EAEAEA_1px,transparent_0)] [background-size:20px_20px] opacity-30" />
+
+      {/* Transaction Modal */}
+      <TransactionModal
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+        status={txStatus}
+        txHash={txHash}
+        errorMessage={txError}
+        title={txTitle}
+        description={txDescription}
+      />
+
+      {/* Loading Overlay */}
+      {isTransactionPending && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 pointer-events-none" />
+      )}
 
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
@@ -184,28 +231,30 @@ export default function FactoryTryPage() {
                   Feed Address
                 </label>
                 <input
-                  className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-gray-400 font-mono"
+                  className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-gray-400 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="0x..."
                   value={feedAddress}
                   onChange={(e) => setFeedAddress(e.target.value)}
+                  disabled={isTransactionPending}
                 />
               </div>
 
               <button
                 className={`w-full py-2.5 px-6 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                  isFeedFormValid && !isLoading
+                  isFeedFormValid && !isTransactionPending
                     ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 hover:shadow-lg transform hover:-translate-y-0.5"
                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
                 }`}
                 onClick={() =>
-                  handleTx(
+                  handleTransaction(
                     () => setPriceFeed(tokenPair, feedAddress as `0x${string}`),
-                    "Setting feed"
+                    "Setting Price Feed",
+                    `Configuring ${tokenPair} oracle feed`
                   )
                 }
-                disabled={!isFeedFormValid || isLoading}
+                disabled={!isFeedFormValid || isTransactionPending}
               >
-                {isLoading ? (
+                {isTransactionPending ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     Processing...
@@ -249,7 +298,7 @@ export default function FactoryTryPage() {
                   Initial Liquidity (ETH) *
                 </label>
                 <input
-                  className={`w-full px-3.5 py-2.5 text-sm bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 transition-all placeholder-gray-400 ${
+                  className={`w-full px-3.5 py-2.5 text-sm bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 transition-all placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed ${
                     isLiquidityValid
                       ? "border-gray-200 focus:ring-green-500 focus:border-transparent"
                       : "border-red-300 focus:ring-red-500"
@@ -260,6 +309,7 @@ export default function FactoryTryPage() {
                   type="number"
                   step="0.0001"
                   min="0.0001"
+                  disabled={isTransactionPending}
                 />
                 <p className="text-xs text-gray-500">
                   💧 Any amount &gt; 0 ETH (split 50/50 between BULL/BEAR)
@@ -277,10 +327,11 @@ export default function FactoryTryPage() {
                     Target Price
                   </label>
                   <input
-                    className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400"
+                    className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="e.g. 3000"
                     value={targetPrice}
                     onChange={(e) => setTargetPrice(e.target.value)}
+                    disabled={isTransactionPending}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -288,10 +339,11 @@ export default function FactoryTryPage() {
                     Creator Fee (%)
                   </label>
                   <input
-                    className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400"
+                    className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="50 = 0.5%"
                     value={creatorFee}
                     onChange={(e) => setCreatorFee(e.target.value)}
+                    disabled={isTransactionPending}
                   />
                 </div>
               </div>
@@ -321,7 +373,7 @@ export default function FactoryTryPage() {
                         <button
                           key={label}
                           type="button"
-                          className="py-1.5 px-3 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
+                          className="py-1.5 px-3 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           onClick={() => {
                             setRampStart(timestamp.toString());
                             setRampStartDateTime(
@@ -330,6 +382,7 @@ export default function FactoryTryPage() {
                                 .slice(0, 16)
                             );
                           }}
+                          disabled={isTransactionPending}
                         >
                           -{label}
                         </button>
@@ -339,7 +392,7 @@ export default function FactoryTryPage() {
 
                   <input
                     type="datetime-local"
-                    className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400 font-mono"
+                    className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
                     value={rampStartDateTime}
                     onChange={(e) => {
                       const timestamp =
@@ -355,6 +408,7 @@ export default function FactoryTryPage() {
                     max={new Date(Number(expiry) * 1000)
                       .toISOString()
                       .slice(0, 16)}
+                    disabled={isTransactionPending}
                   />
 
                   {rampStart && mounted && (
@@ -370,10 +424,11 @@ export default function FactoryTryPage() {
                   Expiry Time
                 </label>
                 <input
-                  className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400 font-mono"
+                  className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="UNIX timestamp"
                   value={expiry}
                   onChange={(e) => setExpiry(e.target.value)}
+                  disabled={isTransactionPending}
                 />
                 {expiry && mounted && (
                   <p className="text-xs text-gray-500 mt-1">
@@ -392,7 +447,8 @@ export default function FactoryTryPage() {
                   <button
                     key={label}
                     onClick={() => setRelativeExpiry(seconds)}
-                    className="py-1.5 px-2.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
+                    className="py-1.5 px-2.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isTransactionPending}
                   >
                     +{label}
                   </button>
@@ -401,12 +457,12 @@ export default function FactoryTryPage() {
 
               <button
                 className={`w-full py-2.5 px-6 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                  isFormValid && !isLoading
+                  isFormValid && !isTransactionPending
                     ? "bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 hover:shadow-lg transform hover:-translate-y-0.5"
                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
                 }`}
                 onClick={() =>
-                  handleTx(
+                  handleTransaction(
                     () =>
                       createPredictionPool(
                         tokenPair,
@@ -416,12 +472,13 @@ export default function FactoryTryPage() {
                         BigInt(creatorFee),
                         initialLiquidity
                       ),
-                    "Creating Pool"
+                    "Creating Prediction Pool",
+                    `Creating ${tokenPair} pool with ${initialLiquidity} ETH initial liquidity`
                   )
                 }
-                disabled={!isFormValid || isLoading}
+                disabled={!isFormValid || isTransactionPending}
               >
-                {isLoading ? (
+                {isTransactionPending ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     Creating Pool...
@@ -490,28 +547,6 @@ export default function FactoryTryPage() {
             </div>
           )}
         </section>
-
-        {/* Transaction Status */}
-        {txHash && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3.5">
-            <div className="flex items-center gap-3">
-              <div className="w-6 h-6 border-2 border-yellow-500/30 border-t-yellow-500 rounded-full animate-spin"></div>
-              <div>
-                <p className="text-sm font-medium text-yellow-800">
-                  Transaction pending...
-                </p>
-                <a
-                  href={`https://sepolia.etherscan.io/tx/${txHash}`}
-                  className="text-xs text-yellow-600 underline hover:no-underline font-mono"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {txHash}
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
