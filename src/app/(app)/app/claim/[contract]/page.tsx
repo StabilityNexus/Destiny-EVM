@@ -26,6 +26,13 @@ import NotFoundPool from "@/components/game/NotFoundPool";
 import { TransactionModal } from "@/components/modals";
 import { formatEther } from "viem/utils";
 
+/**
+ * Renders the pool claim page that lets the pool creator finalize results and eligible users claim rewards after a pool has ended.
+ *
+ * The component displays final pool statistics, snapshot status, the user's positions, and action controls (take snapshot for the creator, claim rewards for winners). It manages transaction lifecycle state and shows a transaction modal while transactions are pending; it also redirects to the active pool page when the pool is not expired and shows a not-found or loading state when pool metadata is missing or loading.
+ *
+ * @returns The rendered Claim page UI as a JSX element.
+ */
 export default function ClaimPage() {
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
   const [modalOpen, setModalOpen] = useState(false);

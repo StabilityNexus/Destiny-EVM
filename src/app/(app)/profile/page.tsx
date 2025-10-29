@@ -188,6 +188,13 @@ const CountdownCompact = ({ expiry }: { expiry: bigint }) => {
   return <span className="font-mono">{timeLeft || "Loading..."}</span>;
 };
 
+/**
+ * Render the connected user's profile page including wallet address, summary statistics, and the user's created pools.
+ *
+ * Renders a compact header with a truncated address badge (copy and explorer link), a four-card statistics grid, and a pools section that shows a loading state, a grid of PoolCardSimple entries when pools exist, or an empty-state prompt when no pools are found.
+ *
+ * @returns The React element for the profile page UI.
+ */
 export default function ProfilePage() {
   const { address, isConnected } = useAccount();
   const router = useRouter();

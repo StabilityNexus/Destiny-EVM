@@ -19,6 +19,22 @@ interface TransactionModalProps {
   description?: string;
 }
 
+/**
+ * Display a modal that reflects transaction lifecycle states: pending, success, error, or idle.
+ *
+ * The modal shows status-appropriate content (spinner, success/error indicators, messages), an optional
+ * transaction hash with a link to a block explorer, and Close controls. Clicking the backdrop or Close
+ * button invokes `onClose` except while the status is `"pending"`.
+ *
+ * @param isOpen - Whether the modal is visible
+ * @param onClose - Callback invoked to close the modal (not called while status is `"pending"`)
+ * @param status - One of `"pending"`, `"success"`, `"error"`, or `"idle"` to determine displayed content
+ * @param txHash - Optional transaction hash (expected as `0x...`) used to render the block explorer link
+ * @param errorMessage - Optional error details shown when `status` is `"error"`
+ * @param title - Optional override for the modal title
+ * @param description - Optional override for the modal description
+ * @returns The modal JSX element when `isOpen` is true, or `null` when closed
+ */
 export function TransactionModal({
   isOpen,
   onClose,
