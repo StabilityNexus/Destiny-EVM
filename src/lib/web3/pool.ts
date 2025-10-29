@@ -2,7 +2,14 @@ import { useReadContract, useWriteContract, useAccount } from "wagmi";
 import abi from "@/lib/contracts/abi/PredictionPool.json" assert { type: "json" };
 import { parseEther } from "viem/utils";
 
-// ========== READ HOOKS ==========
+/**
+ * Reads on-chain pool metadata for the given pool address.
+ *
+ * @param address - Optional pool contract address; must be a hex string starting with `0x`. If not provided or invalid, `metadata` will be `null`.
+ * @returns An object containing:
+ * - `metadata`: an object with pool values (`tokenPair`, `targetPrice`, `expiry`, `rampStart`, `creatorFee`, `latestPrice`, `currentFee`, `snapshotPrice`, `snapshotTaken`, `initialized`, `creator`, `protocolFeeRecipient`, `createdAt`) when required fields are available, or `null` otherwise.
+ * - `refetch`: a function that refreshes the underlying on-chain queries used to build `metadata`.
+ */
 
 export function usePoolMetadata(address?: `0x${string}`) {
   const enabled = !!address && address.startsWith("0x");
@@ -122,7 +129,14 @@ export function usePoolMetadata(address?: `0x${string}`) {
   };
 }
 
-// ========== USER SHARES ==========
+/**
+ * Reads a user's bull and bear share balances from the specified pool contract.
+ *
+ * @returns An object with:
+ * - `bullShares`: the user's bull share balance as a `bigint` (defaults to `0n` if unavailable),
+ * - `bearShares`: the user's bear share balance as a `bigint` (defaults to `0n` if unavailable),
+ * - `refetch`: a function that refetches both share queries.
+ */
 
 export function useGetUserShares(address?: `0x${string}`, user?: string) {
   const enabled = !!address && !!user;
@@ -151,7 +165,15 @@ export function useGetUserShares(address?: `0x${string}`, user?: string) {
   };
 }
 
-// ========== TOTAL SHARES (NEW) ==========
+/**
+ * Reads and exposes the pool's total bull and bear shares and a refetch helper.
+ *
+ * @param address - Optional pool contract address (hex string starting with `0x`)
+ * @returns An object with:
+ *  - `totalBullShares`: the total bull shares as a `bigint` (defaults to `0n`),
+ *  - `totalBearShares`: the total bear shares as a `bigint` (defaults to `0n`),
+ *  - `refetch`: an async function that refreshes both total shares queries
+ */
 
 export function useTotalShares(address?: `0x${string}`) {
   const totalBullSharesQuery = useReadContract({
@@ -176,7 +198,17 @@ export function useTotalShares(address?: `0x${string}`) {
   };
 }
 
-// ========== TOKEN PRICES ==========
+/**
+ * Reads current buy and sell prices for bull and bear positions from a pool contract.
+ *
+ * @param address - Optional pool contract address (0x-prefixed). When omitted, returned prices are zero.
+ * @returns An object containing:
+ *   - `priceBuyBull`: The current buy price for bull positions as a `bigint`.
+ *   - `priceBuyBear`: The current buy price for bear positions as a `bigint`.
+ *   - `priceSellBull`: The current sell price for bull positions as a `bigint`.
+ *   - `priceSellBear`: The current sell price for bear positions as a `bigint`.
+ *   - `refetch`: A function that refetches all four price queries.
+ */
 
 export function useTokenPrices(address?: `0x${string}`) {
   const priceBuyBullQuery = useReadContract({
@@ -217,7 +249,15 @@ export function useTokenPrices(address?: `0x${string}`) {
   };
 }
 
-// ========== POOL STATE ==========
+/**
+ * Reads the on-chain pool state for the given pool contract address.
+ *
+ * @param address - Optional pool contract address (expected to be a hex `0x...` string). If omitted or invalid, no data will be available.
+ * @returns An object with:
+ *  - `state`: `null` when no data is available, otherwise an object containing `bullReserve`, `bearReserve`, `bullPrice`, `bearPrice`, `currentFee`, and `tvl` (all `bigint`).
+ *  - `isLoading`: `boolean` indicating whether the underlying query is still loading.
+ *  - `refetch`: function to re-run the underlying read query.
+ */
 
 export function usePoolState(address?: `0x${string}`) {
   const poolStateQuery = useReadContract({
@@ -251,7 +291,14 @@ export function usePoolState(address?: `0x${string}`) {
   };
 }
 
-// ========== USER POSITION ==========
+/**
+ * Reads a user's position for the specified pool and side, exposing the position's shares, value, and a refetch function.
+ *
+ * @param address - The pool contract address (0x-prefixed)
+ * @param user - The user's address whose position to read
+ * @param side - "BULL" or "BEAR" indicating which side's position to read
+ * @returns An object with `shares` (bigint), `value` (bigint), and `refetch` (function) — `shares` and `value` are `0n` when no position data is available
+ */
 
 export function useUserPosition(
   address?: `0x${string}`,
@@ -280,7 +327,11 @@ export function useUserPosition(
   return { shares, value, refetch: positionQuery.refetch };
 }
 
-// ========== TVL ==========
+/**
+ * Reads the pool's total value locked (TVL) from the contract.
+ *
+ * @returns An object containing `tvl` — the pool's TVL as a `bigint` (0 if not available) — and `refetch` — a function to reload the TVL query.
+ */
 
 export function usePoolTVL(address?: `0x${string}`) {
   const tvlQuery = useReadContract({
@@ -295,7 +346,18 @@ export function usePoolTVL(address?: `0x${string}`) {
   };
 }
 
-// ========== WRITE FUNCTIONS ==========
+/**
+ * Provides write actions for a PredictionPool contract at the specified address.
+ *
+ * @param poolAddress - The pool contract address (0x-prefixed). If omitted, calling any action will throw.
+ * @returns An object with write methods:
+ *  - `mint(side, amountEth)` — mints position tokens for `side` ("BULL" | "BEAR") by sending `amountEth` (in ether) as value; returns the transaction result.
+ *  - `burn(side, shares)` — burns `shares` for `side` and returns the transaction result.
+ *  - `takeSnapshot()` — invokes the pool's snapshot function and returns the transaction result.
+ *  - `claimBull()` — claims bull-side winnings and returns the transaction result.
+ *  - `claimBear()` — claims bear-side winnings and returns the transaction result.
+ * @throws Error - Throws `Error("No pool address provided")` if a method is invoked when `poolAddress` is not supplied.
+ */
 
 export function usePoolWrites(poolAddress?: `0x${string}`) {
   const { writeContractAsync } = useWriteContract();

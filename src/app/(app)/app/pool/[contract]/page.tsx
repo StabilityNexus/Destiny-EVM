@@ -117,6 +117,13 @@ const Countdown = ({ expiry }: { expiry: bigint | undefined }) => {
   );
 };
 
+/**
+ * Render the pool detail page for a single prediction market, showing pool metadata, statistics, charts, trading controls, user positions, and transaction flow.
+ *
+ * The component coordinates data fetching for pool metadata, prices, user shares and positions; displays current/target prices, countdown to expiry, and buy/sell flows; and manages transaction lifecycle (mint, burn, claim) via a modal and receipt watcher. It also redirects expired pools to the claim page.
+ *
+ * @returns The React element for the Pool Detail page, including UI for trading, charts, stats, and transaction handling.
+ */
 export default function PoolDetailPage() {
   const [selectedSide, setSelectedSide] = useState<"bull" | "bear">("bull");
   const [betAmount, setBetAmount] = useState("");

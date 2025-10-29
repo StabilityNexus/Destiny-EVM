@@ -16,6 +16,13 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+/**
+ * Renders the "How Prediction Pools Work" informational page that explains pool mechanics, fees, settlement, reward calculation, and key features.
+ *
+ * The page is a static, client-side React component composed of a hero, quick overview cards, a detailed four-step guide (BULL vs BEAR, minting, burning, expiry/settlement), a reward calculation example, feature highlights, and a CTA section. It includes CTA buttons that navigate to "/app" (view pools) and "/app/factory" (create pool).
+ *
+ * @returns The JSX element for the How Prediction Pools Work page.
+ */
 export default function HowItWorksPage() {
   const router = useRouter();
 

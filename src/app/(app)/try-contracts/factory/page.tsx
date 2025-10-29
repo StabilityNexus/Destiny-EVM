@@ -12,6 +12,13 @@ import { TransactionModal } from "@/components/modals";
 import { PRICE_FEEDS } from "@/lib/contracts/feeds";
 import PriceFeedSelector from "@/components/game/PriceFeedSelector";
 
+/**
+ * Page component that provides a UI for configuring oracle price feeds, creating prediction pools, and browsing active pools in the Factory Playground.
+ *
+ * Renders form controls for selecting token pairs and feed addresses, setting pool parameters (target price, expiry, ramp start, creator fee, and initial liquidity), and a list of existing pools. Manages transaction state with a modal and loading overlay, watches transaction receipts to update status, and refetches price feed and pool data after successful transactions.
+ *
+ * @returns The JSX element for the Factory Playground page.
+ */
 export default function FactoryTryPage() {
   const { address } = useAccount();
 
