@@ -15,8 +15,30 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Forecast Bid",
-  description: "Forecast Bid - Decentralized Prediction Market Platform",
+  title: "Forecast Bid: Decentralized Prediction Pools",
+  description: "Predict the future with decentralized prediction pools",
+  openGraph: {
+    title: "Forecast Bid: Decentralized Prediction Pools",
+    description: "Bet on prediction markets with real-time odds",
+    url: "https://destiny.stability.nexus/",
+    siteName: "Forecast Bid: Decentralized Prediction Pools",
+    images: [
+      {
+        url: "/forecast_bid.png",
+        width: 1200,
+        height: 630,
+        alt: "Forecast Bid Open Graph Image",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Forecast Bid: Decentralized Prediction Pools",
+    description: "Predict the future with decentralized prediction pools",
+    images: ["/forecast_bid.png"],
+  },
 };
 
 /**

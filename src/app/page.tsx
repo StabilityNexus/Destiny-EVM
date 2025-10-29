@@ -63,29 +63,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Partner/Trust Bar */}
-      <div className="w-full bg-black py-6 flex justify-center gap-12 items-center">
-        <img
-          src="/logos/coinbase.svg"
-          alt="Coinbase"
-          className="h-6 opacity-70 hover:opacity-100 transition-opacity"
-        />
-        <img
-          src="/logos/binance.svg"
-          alt="Binance"
-          className="h-6 opacity-70 hover:opacity-100 transition-opacity"
-        />
-        <img
-          src="/logos/uniswap.svg"
-          alt="Uniswap"
-          className="h-6 opacity-70 hover:opacity-100 transition-opacity"
-        />
-        <img
-          src="/logos/chainlink.svg"
-          alt="Chainlink"
-          className="h-6 opacity-70 hover:opacity-100 transition-opacity"
-        />
-      </div>
+      
     </div>
   );
 }
