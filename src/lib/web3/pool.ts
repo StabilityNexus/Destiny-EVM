@@ -7,104 +7,134 @@ import { parseEther } from "viem/utils";
 export function usePoolMetadata(address?: `0x${string}`) {
   const enabled = !!address && address.startsWith("0x");
 
-  const { data: tokenPair } = useReadContract({
+  const tokenPairQuery = useReadContract({
     abi,
     address,
     functionName: "tokenPair",
   });
 
-  const { data: targetPrice } = useReadContract({
+  const targetPriceQuery = useReadContract({
     abi,
     address,
     functionName: "targetPrice",
   });
 
-  const { data: expiry } = useReadContract({
+  const expiryQuery = useReadContract({
     abi,
     address,
     functionName: "expiry",
   });
 
-  const { data: rampStart } = useReadContract({
+  const rampStartQuery = useReadContract({
     abi,
     address,
     functionName: "rampStart",
   });
 
-  const { data: creatorFee } = useReadContract({
+  const creatorFeeQuery = useReadContract({
     abi,
     address,
     functionName: "creatorFee",
   });
 
-  const { data: snapshotPrice } = useReadContract({
+  const snapshotPriceQuery = useReadContract({
     abi,
     address,
     functionName: "snapshotPrice",
   });
 
-  const { data: snapshotTaken } = useReadContract({
+  const snapshotTakenQuery = useReadContract({
     abi,
     address,
     functionName: "snapshotTaken",
   });
 
-  const { data: latestPrice } = useReadContract({
+  const latestPriceQuery = useReadContract({
     abi,
     address,
     functionName: "getLatestPrice",
   });
 
-  const { data: currentFee } = useReadContract({
+  const currentFeeQuery = useReadContract({
     abi,
     address,
     functionName: "fee",
   });
 
-  // NEW: Pool initialization status
-  const { data: initialized } = useReadContract({
+  const initializedQuery = useReadContract({
     abi,
     address,
     functionName: "initialized",
   });
 
+  const creatorQuery = useReadContract({
+    abi,
+    address,
+    functionName: "creator",
+  });
+
+  const protocolFeeRecipientQuery = useReadContract({
+    abi,
+    address,
+    functionName: "protocolFeeRecipient",
+  });
+
+  const createdAtQuery = useReadContract({
+    abi,
+    address,
+    functionName: "createdAt",
+  });
+
   return {
     metadata:
-      tokenPair &&
-        targetPrice &&
-        expiry &&
-        rampStart &&
-        creatorFee &&
-        latestPrice
+      tokenPairQuery.data &&
+        targetPriceQuery.data &&
+        expiryQuery.data &&
+        rampStartQuery.data &&
+        creatorFeeQuery.data &&
+        latestPriceQuery.data
         ? {
-          tokenPair,
-          targetPrice,
-          expiry,
-          rampStart,
-          creatorFee,
-          latestPrice,
-          currentFee,
-          snapshotPrice,
-          snapshotTaken,
-          initialized, // NEW
+          tokenPair: tokenPairQuery.data,
+          targetPrice: targetPriceQuery.data,
+          expiry: expiryQuery.data,
+          rampStart: rampStartQuery.data,
+          creatorFee: creatorFeeQuery.data,
+          latestPrice: latestPriceQuery.data,
+          currentFee: currentFeeQuery.data,
+          snapshotPrice: snapshotPriceQuery.data,
+          snapshotTaken: snapshotTakenQuery.data,
+          initialized: initializedQuery.data,
+          creator: creatorQuery.data as `0x${string}` | undefined,
+          protocolFeeRecipient: protocolFeeRecipientQuery.data as `0x${string}` | undefined,
+          createdAt: createdAtQuery.data,
         }
         : null,
+    refetch: async () => {
+      await tokenPairQuery.refetch();
+      await targetPriceQuery.refetch();
+      await expiryQuery.refetch();
+      await snapshotPriceQuery.refetch();
+      await snapshotTakenQuery.refetch();
+      await latestPriceQuery.refetch();
+      await currentFeeQuery.refetch();
+      await creatorQuery.refetch();
+    },
   };
 }
 
-// ========== USER SHARES (No changes) ==========
+// ========== USER SHARES ==========
 
 export function useGetUserShares(address?: `0x${string}`, user?: string) {
   const enabled = !!address && !!user;
 
-  const { data: bullShares } = useReadContract({
+  const bullSharesQuery = useReadContract({
     abi,
     address,
     functionName: "bullShares",
     args: user ? [user] : undefined,
   });
 
-  const { data: bearShares } = useReadContract({
+  const bearSharesQuery = useReadContract({
     abi,
     address,
     functionName: "bearShares",
@@ -112,70 +142,100 @@ export function useGetUserShares(address?: `0x${string}`, user?: string) {
   });
 
   return {
-    bullShares: (bullShares as bigint) || BigInt(0),
-    bearShares: (bearShares as bigint) || BigInt(0),
+    bullShares: (bullSharesQuery.data as bigint) || BigInt(0),
+    bearShares: (bearSharesQuery.data as bigint) || BigInt(0),
+    refetch: async () => {
+      await bullSharesQuery.refetch();
+      await bearSharesQuery.refetch();
+    },
   };
 }
 
-// ========== NEW: PRICE HOOKS (FATE MODEL) ==========
+// ========== TOTAL SHARES (NEW) ==========
 
-/**
- * Get current buy/sell prices for BULL and BEAR tokens
- */
+export function useTotalShares(address?: `0x${string}`) {
+  const totalBullSharesQuery = useReadContract({
+    abi,
+    address,
+    functionName: "totalBullShares",
+  });
+
+  const totalBearSharesQuery = useReadContract({
+    abi,
+    address,
+    functionName: "totalBearShares",
+  });
+
+  return {
+    totalBullShares: (totalBullSharesQuery.data as bigint) || BigInt(0),
+    totalBearShares: (totalBearSharesQuery.data as bigint) || BigInt(0),
+    refetch: async () => {
+      await totalBullSharesQuery.refetch();
+      await totalBearSharesQuery.refetch();
+    },
+  };
+}
+
+// ========== TOKEN PRICES ==========
+
 export function useTokenPrices(address?: `0x${string}`) {
-  const { data: priceBuyBull } = useReadContract({
+  const priceBuyBullQuery = useReadContract({
     abi,
     address,
     functionName: "priceBuyBull",
   });
 
-  const { data: priceBuyBear } = useReadContract({
+  const priceBuyBearQuery = useReadContract({
     abi,
     address,
     functionName: "priceBuyBear",
   });
 
-  const { data: priceSellBull } = useReadContract({
+  const priceSellBullQuery = useReadContract({
     abi,
     address,
     functionName: "priceSellBull",
   });
 
-  const { data: priceSellBear } = useReadContract({
+  const priceSellBearQuery = useReadContract({
     abi,
     address,
     functionName: "priceSellBear",
   });
 
   return {
-    priceBuyBull: (priceBuyBull as bigint) || BigInt(0),
-    priceBuyBear: (priceBuyBear as bigint) || BigInt(0),
-    priceSellBull: (priceSellBull as bigint) || BigInt(0),
-    priceSellBear: (priceSellBear as bigint) || BigInt(0),
+    priceBuyBull: (priceBuyBullQuery.data as bigint) || BigInt(0),
+    priceBuyBear: (priceBuyBearQuery.data as bigint) || BigInt(0),
+    priceSellBull: (priceSellBullQuery.data as bigint) || BigInt(0),
+    priceSellBear: (priceSellBearQuery.data as bigint) || BigInt(0),
+    refetch: async () => {
+      await priceBuyBullQuery.refetch();
+      await priceBuyBearQuery.refetch();
+      await priceSellBullQuery.refetch();
+      await priceSellBearQuery.refetch();
+    },
   };
 }
 
-// ========== NEW: POOL STATE HOOK ==========
+// ========== POOL STATE ==========
 
-/**
- * Get comprehensive pool state in a single call
- */
 export function usePoolState(address?: `0x${string}`) {
-  const { data, isLoading } = useReadContract({
+  const poolStateQuery = useReadContract({
     abi,
     address,
     functionName: "getPoolState",
   });
 
-  if (!data) {
+  if (!poolStateQuery.data) {
     return {
       state: null,
-      isLoading,
+      isLoading: poolStateQuery.isLoading,
+      refetch: poolStateQuery.refetch,
     };
   }
 
   const [bullReserve, bearReserve, bullPrice, bearPrice, currentFee, tvl] =
-    data as [bigint, bigint, bigint, bigint, bigint, bigint];
+    poolStateQuery.data as [bigint, bigint, bigint, bigint, bigint, bigint];
 
   return {
     state: {
@@ -186,15 +246,13 @@ export function usePoolState(address?: `0x${string}`) {
       currentFee,
       tvl,
     },
-    isLoading,
+    isLoading: poolStateQuery.isLoading,
+    refetch: poolStateQuery.refetch,
   };
 }
 
-// ========== NEW: USER POSITION HOOK ==========
+// ========== USER POSITION ==========
 
-/**
- * Get user's position value and shares for a specific side
- */
 export function useUserPosition(
   address?: `0x${string}`,
   user?: string,
@@ -202,51 +260,48 @@ export function useUserPosition(
 ) {
   const sideEnum = side === "BULL" ? 0 : 1;
 
-  const { data } = useReadContract({
+  const positionQuery = useReadContract({
     abi,
     address,
     functionName: "getUserPosition",
     args: user && side ? [user, sideEnum] : undefined,
   });
 
-  if (!data) {
+  if (!positionQuery.data) {
     return {
       shares: BigInt(0),
       value: BigInt(0),
+      refetch: positionQuery.refetch,
     };
   }
 
-  const [shares, value] = data as [bigint, bigint];
+  const [shares, value] = positionQuery.data as [bigint, bigint];
 
-  return { shares, value };
+  return { shares, value, refetch: positionQuery.refetch };
 }
 
-// ========== NEW: TVL HOOK ==========
+// ========== TVL ==========
 
 export function usePoolTVL(address?: `0x${string}`) {
-  const { data: tvl } = useReadContract({
+  const tvlQuery = useReadContract({
     abi,
     address,
     functionName: "getTVL",
   });
 
   return {
-    tvl: (tvl as bigint) || BigInt(0),
+    tvl: (tvlQuery.data as bigint) || BigInt(0),
+    refetch: tvlQuery.refetch,
   };
 }
 
-// ========== WRITE FUNCTIONS (UPDATED) ==========
+// ========== WRITE FUNCTIONS ==========
 
 export function usePoolWrites(poolAddress?: `0x${string}`) {
   const { writeContractAsync } = useWriteContract();
   const { address: user } = useAccount();
   const enabled = !!poolAddress;
 
-  /**
-   * Mint shares (place bet)
-   * @param side "BULL" or "BEAR"
-   * @param amountEth Amount of ETH to send
-   */
   const mint = async (side: "BULL" | "BEAR", amountEth: string) => {
     if (!enabled) throw new Error("No pool address provided");
     const sideEnum = side === "BULL" ? 0 : 1;
@@ -261,11 +316,6 @@ export function usePoolWrites(poolAddress?: `0x${string}`) {
     });
   };
 
-  /**
-   * Burn shares (withdraw before expiry)
-   * @param side "BULL" or "BEAR"
-   * @param shares Number of shares to burn (not ETH amount!)
-   */
   const burn = async (side: "BULL" | "BEAR", shares: bigint) => {
     if (!enabled) throw new Error("No pool address provided");
     const sideEnum = side === "BULL" ? 0 : 1;
@@ -274,13 +324,10 @@ export function usePoolWrites(poolAddress?: `0x${string}`) {
       address: poolAddress!,
       abi,
       functionName: "burn",
-      args: [sideEnum, shares], // Changed: now expects shares (bigint), not ETH amount
+      args: [sideEnum, shares],
     });
   };
 
-  /**
-   * Take snapshot of oracle price (after expiry)
-   */
   const takeSnapshot = async () => {
     if (!enabled) throw new Error("No pool address provided");
     return await writeContractAsync({
@@ -290,39 +337,29 @@ export function usePoolWrites(poolAddress?: `0x${string}`) {
     });
   };
 
-  /**
-   * Claim BULL rewards (for winners)
-   * UPDATED: Now uses claimBull() instead of claim()
-   */
   const claimBull = async () => {
     if (!enabled) throw new Error("No pool address provided");
     return await writeContractAsync({
       address: poolAddress!,
       abi,
-      functionName: "claimBull", // CHANGED: was "claim"
+      functionName: "claimBull",
     });
   };
 
-  /**
-   * Claim BEAR rewards (for winners)
-   * NEW: Separate function for BEAR side
-   */
   const claimBear = async () => {
     if (!enabled) throw new Error("No pool address provided");
     return await writeContractAsync({
       address: poolAddress!,
       abi,
-      functionName: "claimBear", // NEW
+      functionName: "claimBear",
     });
   };
-
-  // REMOVED: withdrawCreatorFee (fees now auto-distributed in takeSnapshot)
 
   return {
     mint,
     burn,
     takeSnapshot,
-    claimBull,  // CHANGED: was "claim"
-    claimBear   // NEW
+    claimBull,
+    claimBear,
   };
 }

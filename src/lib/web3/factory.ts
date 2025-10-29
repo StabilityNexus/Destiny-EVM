@@ -40,27 +40,27 @@ export function useCreatePredictionPool() {
     expiry: bigint,
     rampStart: bigint,
     creatorFee: bigint,
-    initialLiquidityEth: string // NEW: Required initial liquidity
+    initialLiquidityEth: string
   ) => {
-    const value = parseEther(initialLiquidityEth); // NEW
+    const value = parseEther(initialLiquidityEth);
 
     return await writeContractAsync({
       address: factoryAddress,
       abi: PredictionFactoryAbi,
       functionName: "createPredictionPool",
       args: [tokenPair, targetPrice, expiry, rampStart, creatorFee],
-      value, // NEW: Send ETH with transaction
+      value,
     });
   };
 }
 
-// ---------- 🔹 2. Get all pools (paginated) - No changes ----------
+// ---------- 🔹 2. Get all pools (paginated) - UPDATED with refetch ----------
 export function useAllPools(
   offset: bigint = BigInt(0),
   limit: bigint = BigInt(50)
 ) {
   const factoryAddress = useFactoryAddress();
-  const { data, isLoading } = useReadContract({
+  const poolsQuery = useReadContract({
     address: factoryAddress,
     abi: PredictionFactoryAbi,
     functionName: "getAllPools",
@@ -68,34 +68,36 @@ export function useAllPools(
   });
 
   return {
-    allPools: data as `0x${string}`[] | undefined,
-    isLoading,
+    allPools: poolsQuery.data as `0x${string}`[] | undefined,
+    isLoading: poolsQuery.isLoading,
+    refetch: poolsQuery.refetch,
   };
 }
 
-// ---------- 🔹 3. Get total number of pools - No changes ----------
+// ---------- 🔹 3. Get total number of pools - UPDATED with refetch ----------
 export function useAllPoolsCount() {
   const factoryAddress = useFactoryAddress();
-  const { data, isLoading } = useReadContract({
+  const countQuery = useReadContract({
     address: factoryAddress,
     abi: PredictionFactoryAbi,
     functionName: "getAllPoolsCount",
   });
 
   return {
-    totalPools: data as bigint | undefined,
-    isLoading,
+    totalPools: countQuery.data as bigint | undefined,
+    isLoading: countQuery.isLoading,
+    refetch: countQuery.refetch,
   };
 }
 
-// ---------- 🔹 4. Get pools created by a specific creator (paginated) - No changes ----------
+// ---------- 🔹 4. Get pools created by a specific creator (paginated) - UPDATED with refetch ----------
 export function useGetPoolsByCreator(
   creator: `0x${string}`,
   offset: bigint = BigInt(0),
   limit: bigint = BigInt(50)
 ) {
   const factoryAddress = useFactoryAddress();
-  const { data, isLoading } = useReadContract({
+  const poolsQuery = useReadContract({
     address: factoryAddress,
     abi: PredictionFactoryAbi,
     functionName: "getPoolsByCreator",
@@ -103,15 +105,16 @@ export function useGetPoolsByCreator(
   });
 
   return {
-    pools: data as `0x${string}`[] | undefined,
-    isLoading,
+    pools: poolsQuery.data as `0x${string}`[] | undefined,
+    isLoading: poolsQuery.isLoading,
+    refetch: poolsQuery.refetch,
   };
 }
 
-// ---------- 🔹 5. Get number of pools by creator - No changes ----------
+// ---------- 🔹 5. Get number of pools by creator - UPDATED with refetch ----------
 export function useGetPoolsByCreatorCount(creator: `0x${string}`) {
   const factoryAddress = useFactoryAddress();
-  const { data, isLoading } = useReadContract({
+  const countQuery = useReadContract({
     address: factoryAddress,
     abi: PredictionFactoryAbi,
     functionName: "getPoolsByCreatorCount",
@@ -119,15 +122,16 @@ export function useGetPoolsByCreatorCount(creator: `0x${string}`) {
   });
 
   return {
-    count: data as bigint | undefined,
-    isLoading,
+    count: countQuery.data as bigint | undefined,
+    isLoading: countQuery.isLoading,
+    refetch: countQuery.refetch,
   };
 }
 
-// ---------- 🔹 6. Get price feed for a given token pair - No changes ----------
+// ---------- 🔹 6. Get price feed for a given token pair - UPDATED with refetch ----------
 export function useGetPriceFeed(tokenPair: string) {
   const factoryAddress = useFactoryAddress();
-  const { data, isLoading } = useReadContract({
+  const feedQuery = useReadContract({
     address: factoryAddress,
     abi: PredictionFactoryAbi,
     functionName: "getPriceFeed",
@@ -135,8 +139,9 @@ export function useGetPriceFeed(tokenPair: string) {
   });
 
   return {
-    feedAddress: data as `0x${string}` | undefined,
-    isLoading,
+    feedAddress: feedQuery.data as `0x${string}` | undefined,
+    isLoading: feedQuery.isLoading,
+    refetch: feedQuery.refetch,
   };
 }
 
@@ -157,25 +162,26 @@ export function useSetPriceFeed() {
   };
 }
 
-// ---------- 🔹 8. Get owner of the factory - No changes ----------
+// ---------- 🔹 8. Get owner of the factory - UPDATED with refetch ----------
 export function useFactoryOwner() {
   const factoryAddress = useFactoryAddress();
-  const { data, isLoading } = useReadContract({
+  const ownerQuery = useReadContract({
     address: factoryAddress,
     abi: PredictionFactoryAbi,
     functionName: "owner",
   });
 
   return {
-    owner: data as `0x${string}` | undefined,
-    isLoading,
+    owner: ownerQuery.data as `0x${string}` | undefined,
+    isLoading: ownerQuery.isLoading,
+    refetch: ownerQuery.refetch,
   };
 }
 
-// ---------- 🔹 9. Check if an address is a valid pool - No changes ----------
+// ---------- 🔹 9. Check if an address is a valid pool - UPDATED with refetch ----------
 export function useIsPool(poolAddress: `0x${string}`) {
   const factoryAddress = useFactoryAddress();
-  const { data, isLoading } = useReadContract({
+  const isPoolQuery = useReadContract({
     address: factoryAddress,
     abi: PredictionFactoryAbi,
     functionName: "isPool",
@@ -183,22 +189,24 @@ export function useIsPool(poolAddress: `0x${string}`) {
   });
 
   return {
-    isPool: data as boolean | undefined,
-    isLoading,
+    isPool: isPoolQuery.data as boolean | undefined,
+    isLoading: isPoolQuery.isLoading,
+    refetch: isPoolQuery.refetch,
   };
 }
 
-// ---------- 🔹 10. Get minimum initial liquidity required (NEW) ----------
+// ---------- 🔹 10. Get minimum initial liquidity required (NEW) - with refetch ----------
 export function useMinInitialLiquidity() {
   const factoryAddress = useFactoryAddress();
-  const { data, isLoading } = useReadContract({
+  const minLiqQuery = useReadContract({
     address: factoryAddress,
     abi: PredictionFactoryAbi,
     functionName: "getMinInitialLiquidity",
   });
 
   return {
-    minLiquidity: data as bigint | undefined,
-    isLoading,
+    minLiquidity: minLiqQuery.data as bigint | undefined,
+    isLoading: minLiqQuery.isLoading,
+    refetch: minLiqQuery.refetch,
   };
 }

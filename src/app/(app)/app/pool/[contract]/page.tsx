@@ -12,6 +12,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Info,
+  HelpCircle,
+  ExternalLink,
 } from "lucide-react";
 import {
   LineChart,
@@ -23,18 +25,20 @@ import {
   Area,
   AreaChart,
 } from "recharts";
-import { useParams } from "next/navigation";
-import { useAccount } from "wagmi";
+import { useParams, useRouter } from "next/navigation";
+import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 import {
   usePoolMetadata,
   useGetUserShares,
   usePoolWrites,
-  useTokenPrices, // NEW
-  usePoolState, // NEW
-  useUserPosition, // NEW
+  useTokenPrices,
+  usePoolState,
+  useUserPosition,
 } from "@/lib/web3/pool";
 import NotFoundPool from "@/components/game/NotFoundPool";
+import { TransactionModal } from "@/components/modals";
 import { formatEther } from "viem/utils";
+import Link from "next/link";
 
 // Mock data for charts
 const MOCK_PRICE_HISTORY = Array.from({ length: 24 }, (_, i) => ({
@@ -47,6 +51,32 @@ const MOCK_VOLUME_HISTORY = Array.from({ length: 24 }, (_, i) => ({
   bull: Math.random() * 5,
   bear: Math.random() * 5,
 }));
+
+// Info Tooltip Component
+const InfoTooltip = ({ text }: { text: string }) => {
+  const [show, setShow] = useState(false);
+
+  return (
+    <div className="relative inline-block">
+      <button
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        onClick={() => setShow(!show)}
+        className="text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        <HelpCircle className="h-4 w-4" />
+      </button>
+      {show && (
+        <div className="absolute z-50 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg bottom-full left-1/2 transform -translate-x-1/2 mb-2">
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
+            <div className="border-8 border-transparent border-t-gray-900"></div>
+          </div>
+          {text}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Countdown = ({ expiry }: { expiry: bigint | undefined }) => {
   const [timeLeft, setTimeLeft] = useState({
@@ -90,40 +120,99 @@ const Countdown = ({ expiry }: { expiry: bigint | undefined }) => {
 export default function PoolDetailPage() {
   const [selectedSide, setSelectedSide] = useState<"bull" | "bear">("bull");
   const [betAmount, setBetAmount] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [txStatus, setTxStatus] = useState<
+    "idle" | "pending" | "success" | "error"
+  >("idle");
+  const [txError, setTxError] = useState<string | undefined>();
+  const [txTitle, setTxTitle] = useState<string | undefined>();
+  const [txDescription, setTxDescription] = useState<string | undefined>();
+  const [showInfoBanner, setShowInfoBanner] = useState(true);
 
   const { contract } = useParams<{ contract: `0x${string}` }>();
   const { address: userAddress } = useAccount();
+  const router = useRouter();
 
-  const { metadata } = usePoolMetadata(contract);
-  const { bullShares, bearShares } = useGetUserShares(
+  const { metadata, refetch: refetchMetadata } = usePoolMetadata(contract);
+  const {
+    bullShares,
+    bearShares,
+    refetch: refetchShares,
+  } = useGetUserShares(
     contract,
     userAddress || "0x0000000000000000000000000000000000000000"
   );
 
-  const { priceBuyBull, priceBuyBear, priceSellBull, priceSellBear } =
-    useTokenPrices(contract);
-  const { state: poolState } = usePoolState(contract);
+  const {
+    priceBuyBull,
+    priceBuyBear,
+    priceSellBull,
+    priceSellBear,
+    refetch: refetchPrices,
+  } = useTokenPrices(contract);
+  const { state: poolState, refetch: refetchPoolState } =
+    usePoolState(contract);
   const bullPosition = useUserPosition(contract, userAddress, "BULL");
   const bearPosition = useUserPosition(contract, userAddress, "BEAR");
 
   const { mint, burn, claimBull, claimBear } = usePoolWrites(contract);
 
-  // Use pool state data if available, fallback to individual queries
-  // Keep as bigint throughout
-  const totalBull = poolState?.bullReserve || bullShares || BigInt(0);
-  const totalBear = poolState?.bearReserve || bearShares || BigInt(0);
-  const currentTVL = poolState?.tvl || totalBull + totalBear;
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+    isError: isErrored,
+    error: receiptError,
+  } = useWaitForTransactionReceipt({
+    hash: txHash,
+  });
 
-  console.log("Pool State:", poolState);
+  useEffect(() => {
+    if (isConfirming) {
+      setTxStatus("pending");
+      setModalOpen(true);
+    } else if (isConfirmed) {
+      setTxStatus("success");
+      refetchAllData();
+    } else if (isErrored) {
+      setTxStatus("error");
+      setTxError(receiptError?.message || "Transaction failed");
+    }
+  }, [isConfirming, isConfirmed, isErrored, receiptError]);
+
+  const refetchAllData = async () => {
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await refetchMetadata();
+      await refetchShares();
+      await refetchPoolState();
+      await refetchPrices();
+    } catch (error) {
+      console.error("Error refetching data:", error);
+    }
+  };
 
   const isExpired = metadata?.expiry
     ? Number(metadata.expiry) < Math.floor(Date.now() / 1000)
     : false;
 
-  // Keep totalPool as bigint, convert to Number only for calculations
+  // Redirect effect for expired pools
+  useEffect(() => {
+    if (isExpired && metadata) {
+      const timer = setTimeout(() => {
+        router.push(`/app/claim/${contract}`);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isExpired, metadata, contract, router]);
+
+  const totalBull = poolState?.bullReserve || BigInt(0);
+  const totalBear = poolState?.bearReserve || BigInt(0);
+  const currentTVL = poolState?.tvl || totalBull + totalBear;
+
   const totalPool = totalBull + totalBear;
-  const totalPoolNumber = Number(totalPool); // Convert once for calculations
+  const totalPoolNumber = Number(totalPool);
 
   const bullPercentage =
     totalPoolNumber > 0 ? (Number(totalBull) * 100) / totalPoolNumber : 50;
@@ -145,10 +234,9 @@ export default function PoolDetailPage() {
     ? Number(metadata.creatorFee) / 100
     : 0;
 
-  // NEW: Calculate expected shares using current token price (Fate model)
   const getCurrentPrice = () => {
     if (selectedSide === "bull") {
-      return priceBuyBull ? Number(priceBuyBull) / 10000 : 1; // Price is scaled by DENOMINATOR (10000)
+      return priceBuyBull ? Number(priceBuyBull) / 10000 : 1;
     } else {
       return priceBuyBear ? Number(priceBuyBear) / 10000 : 1;
     }
@@ -159,12 +247,10 @@ export default function PoolDetailPage() {
     ? (parseFloat(betAmount) * (1 - currentFee / 100)) / currentPrice
     : 0;
 
-  // Convert tokenPair to string safely
   const tokenPairDisplay = metadata?.tokenPair
     ? String(metadata.tokenPair)
     : "Loading...";
 
-  // NEW: Determine winning side and if user won
   const bullWins =
     metadata?.snapshotPrice && metadata?.targetPrice
       ? Number(metadata.snapshotPrice) > Number(metadata.targetPrice)
@@ -175,82 +261,84 @@ export default function PoolDetailPage() {
   const handleMint = async () => {
     if (!betAmount || parseFloat(betAmount) <= 0) return;
 
-    setIsLoading(true);
+    setTxTitle(`Minting ${selectedSide.toUpperCase()} Position`);
+    setTxDescription(
+      `Placing ${betAmount} ETH bet on ${selectedSide.toUpperCase()}`
+    );
+    setTxStatus("pending");
+    setModalOpen(true);
+
     try {
       const side = selectedSide === "bull" ? "BULL" : "BEAR";
-      await mint(side, betAmount);
+      const hash = await mint(side, betAmount);
+      setTxHash(hash);
       setBetAmount("");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Mint failed:", error);
-    } finally {
-      setIsLoading(false);
+      setTxStatus("error");
+      setTxError(error?.message || "Transaction was rejected or failed");
     }
   };
 
-  // UPDATED: Burn now leaves dust behind to satisfy MIN_SUPPLY check
   const handleBurn = async () => {
     const shareAmount = selectedSide === "bull" ? bullShares : bearShares;
     if (!shareAmount || shareAmount <= 0) return;
 
-    setIsLoading(true);
+    setTxTitle(`Burning ${selectedSide.toUpperCase()} Position`);
+    setTxDescription("Withdrawing your position from the pool");
+    setTxStatus("pending");
+    setModalOpen(true);
+
     try {
       const side = selectedSide === "bull" ? "BULL" : "BEAR";
+      const MIN_SUPPLY = BigInt(1000000);
+      const DUST_BUFFER = MIN_SUPPLY * BigInt(2);
 
-      // Calculate how much we can actually burn
-      // Leave behind MIN_SUPPLY (1e6 wei = 0.000001 shares) as dust
-      const MIN_SUPPLY = BigInt(1000000); // 1e6
-      const DUST_BUFFER = MIN_SUPPLY * BigInt(2); // Leave 2x MIN_SUPPLY to be safe
-
-      // Get total supply for this side
       const totalSupply =
         selectedSide === "bull"
           ? poolState?.bullReserve || bullShares
           : poolState?.bearReserve || bearShares;
 
-      // Calculate burnable amount
       let burnableShares = shareAmount;
 
-      // If burning would leave less than DUST_BUFFER, reduce the burn amount
       if (totalSupply - shareAmount < DUST_BUFFER) {
         burnableShares = totalSupply - DUST_BUFFER;
       }
 
-      // Make sure we're actually burning something
       if (burnableShares <= 0) {
-        console.error("Cannot burn: would leave supply too low");
-        // toast.error("Amount too large. Leave some dust behind!");
-        return;
+        throw new Error("Cannot burn: would leave supply too low");
       }
 
-      console.log({
-        totalSupply: totalSupply.toString(),
-        requestedBurn: shareAmount.toString(),
-        actualBurn: burnableShares.toString(),
-        remaining: (totalSupply - burnableShares).toString(),
-      });
-
-      await burn(side, burnableShares);
-    } catch (error) {
+      const hash = await burn(side, burnableShares);
+      setTxHash(hash);
+    } catch (error: any) {
       console.error("Burn failed:", error);
-    } finally {
-      setIsLoading(false);
+      setTxStatus("error");
+      setTxError(error?.message || "Transaction was rejected or failed");
     }
   };
 
-  // UPDATED: Use specific claim functions based on winning side
   const handleClaim = async () => {
-    setIsLoading(true);
+    setTxTitle("Claiming Rewards");
+    setTxDescription(`Claiming your ${bullWins ? "BULL" : "BEAR"} winnings`);
+    setTxStatus("pending");
+    setModalOpen(true);
+
     try {
-      if (bullWins) {
-        await claimBull(); // NEW: Specific function for BULL winners
-      } else {
-        await claimBear(); // NEW: Specific function for BEAR winners
-      }
-    } catch (error) {
+      const hash = bullWins ? await claimBull() : await claimBear();
+      setTxHash(hash);
+    } catch (error: any) {
       console.error("Claim failed:", error);
-    } finally {
-      setIsLoading(false);
+      setTxStatus("error");
+      setTxError(error?.message || "Transaction was rejected or failed");
     }
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setTxHash(undefined);
+    setTxStatus("idle");
+    setTxError(undefined);
   };
 
   if (metadata === null) {
@@ -268,7 +356,35 @@ export default function PoolDetailPage() {
     );
   }
 
-  // Add this before the return statement, after your other calculations
+  // Expired pool redirect screen
+  if (isExpired && metadata) {
+    return (
+      <div className="min-h-screen bg-[#FDFCF5] flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Clock className="h-8 w-8 text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-black mb-2">Pool Has Ended</h2>
+          <p className="text-gray-600 mb-6">
+            This prediction pool has concluded. Redirecting you to the claim
+            page...
+          </p>
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+            <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+            Redirecting in a moment
+          </div>
+          <button
+            onClick={() => router.push(`/app/claim/${contract}`)}
+            className="mt-6 w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+          >
+            Go to Claim Page Now
+            <ExternalLink className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const calculatePotentialReturn = () => {
     if (!betAmount || expectedShares === 0) return "0.0000";
 
@@ -287,9 +403,62 @@ export default function PoolDetailPage() {
     return "0.0000";
   };
 
+  const isTransactionPending = txStatus === "pending";
+
   return (
     <div className="min-h-screen bg-[#FDFCF5] py-8 px-4">
+      <TransactionModal
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+        status={txStatus}
+        txHash={txHash}
+        errorMessage={txError}
+        title={txTitle}
+        description={txDescription}
+      />
+
+      {isTransactionPending && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 pointer-events-none" />
+      )}
+
       <div className="max-w-7xl mx-auto">
+        {/* Info Banner for First-Time Users */}
+        {showInfoBanner && (
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Info className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-bold text-blue-900 mb-1">
+                    How This Works
+                  </h3>
+                  <p className="text-xs text-blue-800 leading-relaxed">
+                    Predict whether {tokenPairDisplay} will be above or below
+                    the target price by expiry. Choose <strong>BULL</strong> if
+                    you think it will go up, or <strong>BEAR</strong> if you
+                    think it will go down. Winners share the entire pool after
+                    fees!{" "}
+                    <Link
+                      href="/app/pool"
+                      className="underline font-semibold hover:text-blue-600"
+                    >
+                      Learn more
+                    </Link>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowInfoBanner(false)}
+                className="text-blue-400 hover:text-blue-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Left Panel - Pool Info */}
           <div className="lg:col-span-4 space-y-5">
@@ -307,7 +476,10 @@ export default function PoolDetailPage() {
 
               {/* Target Price */}
               <div className="bg-gray-50 rounded-xl p-3.5 mb-3">
-                <p className="text-xs text-gray-600 mb-1">TARGET PRICE</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-gray-600">TARGET PRICE</p>
+                  <InfoTooltip text="The benchmark price set when the pool was created. If the final price is above this, BULL wins. If below or equal, BEAR wins." />
+                </div>
                 <p className="text-2xl font-bold text-black">
                   ${(targetPrice * 10 ** 8).toLocaleString()}
                 </p>
@@ -315,7 +487,10 @@ export default function PoolDetailPage() {
 
               {/* Current Price */}
               <div className="bg-blue-50 rounded-xl p-3.5 mb-3">
-                <p className="text-xs text-gray-600 mb-1">CURRENT PRICE</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-gray-600">CURRENT PRICE</p>
+                  <InfoTooltip text="Live price from Chainlink oracle. This updates in real-time and will determine the winner at expiry." />
+                </div>
                 <div className="flex items-center justify-between">
                   <p className="text-xl font-bold text-black">
                     ${current.toLocaleString()}
@@ -340,6 +515,7 @@ export default function PoolDetailPage() {
                 <div className="flex items-center gap-2 text-gray-600">
                   <Clock className="h-4 w-4" />
                   <span className="text-sm font-semibold">Time Remaining</span>
+                  <InfoTooltip text="When this countdown reaches zero, the pool closes. No more trading allowed, and the final oracle price determines the winner." />
                 </div>
                 <Countdown expiry={metadata.expiry as bigint | undefined} />
               </div>
@@ -352,7 +528,10 @@ export default function PoolDetailPage() {
                 </div>
               </div>
               <div className="flex items-center justify-between text-sm mt-2">
-                <span className="text-gray-600">Creator Fee</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-600">Creator Fee</span>
+                  <InfoTooltip text="Percentage of the total pool that goes to the pool creator when the pool ends. This incentivizes creating interesting markets." />
+                </div>
                 <span className="font-semibold text-black">
                   {creatorFeePercent}%
                 </span>
@@ -367,19 +546,20 @@ export default function PoolDetailPage() {
               </h2>
 
               <div className="space-y-3.5">
-                {/* Total Pool */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600">
-                      Total Pool Value
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-600">
+                        Total Pool Value
+                      </span>
+                      <InfoTooltip text="Total ETH deposited by all participants. Winners will split this amount (minus fees) proportionally." />
+                    </div>
                     <span className="text-lg font-bold text-black">
                       {Number(formatEther(currentTVL)).toFixed(4)} ETH
                     </span>
                   </div>
                 </div>
 
-                {/* Bull/Bear Amounts */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-semibold text-green-600 flex items-center gap-1">
@@ -401,7 +581,6 @@ export default function PoolDetailPage() {
                   </div>
                 </div>
 
-                {/* Ratio Bar */}
                 <div>
                   <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
                     <span>Bull: {bullPercentage.toFixed(1)}%</span>
@@ -419,13 +598,13 @@ export default function PoolDetailPage() {
                   </div>
                 </div>
 
-                {/* NEW: Token Prices */}
                 <div className="bg-blue-50 rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Info className="h-4 w-4 text-blue-600" />
                     <p className="text-xs text-blue-900 font-semibold">
                       Token Prices
                     </p>
+                    <InfoTooltip text="Dynamic prices based on the current pool ratio. Prices adjust automatically as more people buy one side." />
                   </div>
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
@@ -447,11 +626,11 @@ export default function PoolDetailPage() {
                   </div>
                 </div>
 
-                {/* Odds */}
                 <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-600 mb-2">
-                    Potential Returns
-                  </p>
+                  <div className="flex items-center gap-1 mb-2">
+                    <p className="text-xs text-gray-600">Potential Returns</p>
+                    <InfoTooltip text="If you win, your payout is multiplied by this amount. Higher imbalance = higher rewards for the minority side!" />
+                  </div>
                   <div className="flex items-center justify-between">
                     <div className="text-center">
                       <p className="text-sm font-semibold text-green-600">
@@ -491,7 +670,6 @@ export default function PoolDetailPage() {
 
           {/* Center Panel - Charts */}
           <div className="lg:col-span-5 space-y-5">
-            {/* Price Chart */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
               <h2 className="text-base font-bold text-black mb-4">
                 Price Movement
@@ -540,7 +718,6 @@ export default function PoolDetailPage() {
               </div>
             </div>
 
-            {/* Volume Chart */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
               <h2 className="text-base font-bold text-black mb-4">
                 Bull/Bear Distribution
@@ -593,37 +770,45 @@ export default function PoolDetailPage() {
 
           {/* Right Panel - Trading */}
           <div className="lg:col-span-3 space-y-5">
-            {/* Trading Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sticky top-8">
-              <h2 className="text-base font-bold text-black mb-4">
-                Place Your Bet
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-bold text-black">
+                  Place Your Bet
+                </h2>
+                <InfoTooltip text="Choose your prediction side and deposit ETH. You'll receive shares that can be claimed for rewards if you're correct!" />
+              </div>
 
               {/* Side Toggle */}
               <div className="flex gap-2 mb-5">
                 <button
                   onClick={() => setSelectedSide("bull")}
+                  disabled={isTransactionPending}
                   className={`flex-1 py-2.5 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
                     selectedSide === "bull"
                       ? "bg-green-500 text-white shadow-md"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <TrendingUp className="h-4 w-4" />
                   BULL
                 </button>
                 <button
                   onClick={() => setSelectedSide("bear")}
+                  disabled={isTransactionPending}
                   className={`flex-1 py-2.5 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
                     selectedSide === "bear"
                       ? "bg-red-500 text-white shadow-md"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <TrendingDown className="h-4 w-4" />
                   BEAR
                 </button>
               </div>
+              <p className="text-xs text-gray-600 mb-4 bg-gray-50 p-2 rounded-lg">
+                💡 <strong>BULL</strong> = Price goes up | <strong>BEAR</strong>{" "}
+                = Price goes down or stays same
+              </p>
 
               {/* Amount Input */}
               <div className="mb-4">
@@ -637,8 +822,9 @@ export default function PoolDetailPage() {
                     step="0.01"
                     value={betAmount}
                     onChange={(e) => setBetAmount(e.target.value)}
+                    disabled={isTransactionPending}
                     placeholder="0.00"
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#BAD8B6] focus:border-[#BAD8B6] outline-none text-base font-mono"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#BAD8B6] focus:border-[#BAD8B6] outline-none text-base font-mono disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -646,7 +832,10 @@ export default function PoolDetailPage() {
               {/* Fee Display */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4">
                 <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="text-gray-700">Current Fee</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-700">Current Fee</span>
+                    <InfoTooltip text="Dynamic trading fee that increases as the pool approaches expiry. Fee goes to the opposite side's pool." />
+                  </div>
                   <span className="font-semibold text-black">
                     {currentFee.toFixed(1)}%
                   </span>
@@ -658,7 +847,7 @@ export default function PoolDetailPage() {
                   />
                 </div>
                 <p className="text-xs text-gray-600 mt-1">
-                  Fee increases as expiry approaches
+                  ⏰ Fee increases as expiry approaches
                 </p>
               </div>
 
@@ -685,10 +874,14 @@ export default function PoolDetailPage() {
                 </div>
               )}
 
-              {/* Action Buttons */}
+              {/* Mint Button */}
               <button
                 onClick={handleMint}
-                disabled={!betAmount || parseFloat(betAmount) <= 0 || isLoading}
+                disabled={
+                  !betAmount ||
+                  parseFloat(betAmount) <= 0 ||
+                  isTransactionPending
+                }
                 className={`w-full py-2.5 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-2 mb-2.5 text-sm ${
                   selectedSide === "bull"
                     ? "bg-green-500 hover:bg-green-600 text-white"
@@ -696,28 +889,42 @@ export default function PoolDetailPage() {
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <CheckCircle className="h-5 w-5" />
-                {isLoading
+                {isTransactionPending
                   ? "Processing..."
-                  : `Mint ${selectedSide.toUpperCase()} Position`}
+                  : `Buy ${selectedSide.toUpperCase()} Shares`}
               </button>
+              <p className="text-xs text-gray-500 text-center mb-3">
+                🔒 Funds locked until pool ends or you burn position
+              </p>
 
+              {/* Burn Button */}
               {((selectedSide === "bull" && bullShares > 0) ||
                 (selectedSide === "bear" && bearShares > 0)) && (
-                <button
-                  onClick={handleBurn}
-                  disabled={isLoading}
-                  className="w-full py-2 border-2 border-gray-300 rounded-xl font-semibold text-sm text-gray-700 hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
-                >
-                  {isLoading ? "Processing..." : "Burn Position"}
-                </button>
+                <>
+                  <button
+                    onClick={handleBurn}
+                    disabled={isTransactionPending}
+                    className="w-full py-2 border-2 border-gray-300 rounded-xl font-semibold text-sm text-gray-700 hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
+                  >
+                    {isTransactionPending
+                      ? "Processing..."
+                      : "Sell Your Shares"}
+                  </button>
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    💸 Exit early (fees apply)
+                  </p>
+                </>
               )}
             </div>
 
             {/* Your Positions Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-              <h3 className="text-base font-bold text-black mb-4">
-                Your Positions
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-bold text-black">
+                  Your Positions
+                </h3>
+                <InfoTooltip text="Your current holdings in this pool. Win rewards based on your share percentage!" />
+              </div>
 
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
@@ -757,21 +964,19 @@ export default function PoolDetailPage() {
                 </div>
               </div>
 
-              {/* UPDATED: Only show claim if user won */}
               {isExpired && userWon && (
                 <button
                   onClick={handleClaim}
-                  disabled={isLoading}
+                  disabled={isTransactionPending}
                   className="w-full mt-3.5 py-2.5 bg-[#BAD8B6] hover:bg-[#9CC499] text-black font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                 >
                   <CheckCircle className="h-5 w-5" />
-                  {isLoading
+                  {isTransactionPending
                     ? "Processing..."
                     : `Claim ${bullWins ? "BULL" : "BEAR"} Rewards`}
                 </button>
               )}
 
-              {/* Show loss message */}
               {isExpired && !userWon && (bullShares > 0 || bearShares > 0) && (
                 <div className="mt-3.5 p-3 bg-gray-100 rounded-xl text-center">
                   <p className="text-sm text-gray-600">
