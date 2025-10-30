@@ -492,7 +492,7 @@ export default function FactoryTryPage() {
         </div>
 
         {/* Pool List Section */}
-        <section className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50">
+        {/* <section className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -546,7 +546,7 @@ export default function FactoryTryPage() {
               </p>
             </div>
           )}
-        </section>
+        </section> */}
       </div>
     </div>
   );

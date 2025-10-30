@@ -88,6 +88,14 @@ const PoolCard = ({
   const bearPercentage =
     totalPool > 0 ? (Number(totalBear) / totalPool) * 100 : 50;
 
+  const formatUSDPrice = (priceUSD: number) => {
+    if (!priceUSD || priceUSD === 0) return "0.00";
+    return priceUSD.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
   if (viewMode === "list") {
     return (
       <div
@@ -109,7 +117,7 @@ const PoolCard = ({
                     <span className="font-semibold text-black">
                       $
                       {metadata?.targetPrice
-                        ? (Number(metadata.targetPrice) / 1e8).toLocaleString()
+                        ? (formatUSDPrice(metadata.targetPrice))
                         : "—"}
                     </span>
                   </p>
@@ -502,43 +510,116 @@ export const PredictionPoolsFeed = () => {
     <div className="min-h-screen bg-[#FDFCF5] text-black">
       <div className="max-w-7xl mx-auto px-8 py-12">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold text-black mb-2 tracking-tight">
-              🎯 Prediction Markets
-            </h1>
-            <p className="text-gray-700 text-base">
-              {filteredPools.length} of {allPools?.length || 0}{" "}
-              {allPools?.length === 1 ? "pool" : "pools"}
-              {activeFilter !== "all" && ` (${activeFilter})`}
-            </p>
+        {/* Header - Mobile Optimized */}
+        <div className="flex flex-col gap-4 mb-6 sm:mb-8">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-black mb-1 sm:mb-2 tracking-tight">
+                🎯 Prediction Markets
+              </h1>
+              <p className="text-gray-700 text-xs sm:text-sm md:text-base">
+                {filteredPools.length} of {allPools?.length || 0}{" "}
+                {allPools?.length === 1 ? "pool" : "pools"}
+                {activeFilter !== "all" && ` (${activeFilter})`}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Desktop Create Button */}
+              <Button
+                onClick={() => router.push("/app/create")}
+                className="hidden sm:inline-flex px-3 sm:px-4 py-2 bg-[#BAD8B6] text-black font-semibold rounded-xl hover:bg-[#a7c8a3] transition-all duration-200 text-xs sm:text-sm"
+              >
+                CREATE POOL +
+              </Button>
+
+              {/* View Toggle */}
+              <div className="flex items-center bg-white rounded-xl p-0.5 sm:p-1 border border-gray-200">
+                {[
+                  { mode: "list", icon: List },
+                  { mode: "grid", icon: Grid },
+                ].map(({ mode, icon: Icon }) => (
+                  <button
+                    key={mode}
+                    onClick={() => setViewMode(mode as "list" | "grid")}
+                    className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${
+                      viewMode === mode
+                        ? "bg-[#BAD8B6] text-black"
+                        : "text-gray-600 hover:text-black hover:bg-gray-50"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search and Filters - Mobile Optimized */}
+        <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 md:p-5 mb-4 sm:mb-6">
+          {/* Search Bar */}
+          <div className="relative mb-3 sm:mb-4 md:mb-5">
+            <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search pools..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 text-xs sm:text-sm border border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-[#BAD8B6] focus:border-[#BAD8B6] outline-none transition-all duration-200"
+            />
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => router.push("/app/create")}
-              className="px-4 py-2 bg-[#BAD8B6] text-black font-semibold rounded-xl hover:bg-[#a7c8a3] transition-all duration-200"
-            >
-              CREATE PREDICTION POOL +
-            </Button>
-
-            <div className="flex items-center bg-white rounded-xl p-1 border border-gray-200">
+          <div className="flex flex-col gap-3">
+            {/* Status Filters */}
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               {[
-                { mode: "list", icon: List },
-                { mode: "grid", icon: Grid },
-              ].map(({ mode, icon: Icon }) => (
+                { key: "all", label: "All", count: getFilterCounts.all },
+                {
+                  key: "active",
+                  label: "Active",
+                  count: getFilterCounts.active,
+                },
+                {
+                  key: "expired",
+                  label: "Expired",
+                  count: getFilterCounts.expired,
+                },
+              ].map(({ key, label, count }) => (
                 <button
-                  key={mode}
-                  onClick={() => setViewMode(mode as "list" | "grid")}
-                  className={`p-2 rounded-lg transition-all duration-200 ${
-                    viewMode === mode
+                  key={key}
+                  onClick={() => setActiveFilter(key as any)}
+                  className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
+                    activeFilter === key
                       ? "bg-[#BAD8B6] text-black"
-                      : "text-gray-600 hover:text-black hover:bg-gray-50"
+                      : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    {label} ({count})
+                  </span>
+                  <span className="sm:hidden">
+                    {label.slice(0, 3)} ({count})
+                  </span>
                 </button>
               ))}
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
+                Sort:
+              </span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="flex-1 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm border border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-[#BAD8B6] focus:border-[#BAD8B6] outline-none bg-white"
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="volume">Highest TVL</option>
+                <option value="ending_soon">Ending Soon</option>
+              </select>
             </div>
           </div>
         </div>

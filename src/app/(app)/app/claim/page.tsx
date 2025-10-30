@@ -4,14 +4,15 @@ import React, { useState, useEffect } from "react";
 import {
   TrendingUp,
   TrendingDown,
-  Clock,
   User,
   Activity,
   CheckCircle,
   Trophy,
   AlertCircle,
-  ExternalLink,
   Shield,
+  Sparkles,
+  Coins,
+  XCircle,
 } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAccount, useWaitForTransactionReceipt } from "wagmi";
@@ -41,7 +42,6 @@ export default function ClaimPage() {
   const { address: userAddress } = useAccount();
   const router = useRouter();
 
-  // ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
   const { metadata, refetch: refetchMetadata } = usePoolMetadata(
     contract || "0x0000000000000000000000000000000000000000"
   );
@@ -76,7 +76,6 @@ export default function ClaimPage() {
     hash: txHash,
   });
 
-  // ALL useEffect HOOKS
   useEffect(() => {
     if (isConfirming) {
       setTxStatus("pending");
@@ -106,7 +105,6 @@ export default function ClaimPage() {
     }
   }, [metadata, isExpired, contract, router]);
 
-  // NOW SAFE TO DO EARLY RETURNS
   if (!contract) {
     return (
       <div className="min-h-screen bg-[#FDFCF5] flex items-center justify-center">
@@ -134,22 +132,41 @@ export default function ClaimPage() {
       ? userAddress.toLowerCase() === metadata.creator.toLowerCase()
       : false;
 
-  const targetPrice = metadata?.targetPrice
-    ? Number(metadata.targetPrice) / 1e8
+  const targetPriceUSD = metadata?.targetPrice
+    ? Number(metadata.targetPrice)
     : 0;
-  const snapshotPrice = metadata?.snapshotPrice
-    ? Number(metadata.snapshotPrice) / 1e8
+  const snapshotPriceRaw = metadata?.snapshotPrice
+    ? Number(metadata.snapshotPrice)
     : 0;
-  const currentPrice = metadata?.latestPrice
-    ? Number(metadata.latestPrice) / 1e8
+  const currentPriceRaw = metadata?.latestPrice
+    ? Number(metadata.latestPrice)
     : 0;
+
+  const snapshotPriceUSD = snapshotPriceRaw / 1e8;
+  const currentPriceUSD = currentPriceRaw / 1e8;
 
   const bullWins = snapshotTaken
-    ? snapshotPrice > targetPrice
-    : currentPrice > targetPrice;
+    ? snapshotPriceUSD > targetPriceUSD
+    : currentPriceUSD > targetPriceUSD;
 
-  const userHasBullShares = bullShares > 0;
-  const userHasBearShares = bearShares > 0;
+  const formatChainlinkPrice = (priceRaw: number) => {
+    if (!priceRaw || priceRaw === 0) return "0.00";
+    return (priceRaw / 1e8).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  const formatUSDPrice = (priceUSD: number) => {
+    if (!priceUSD || priceUSD === 0) return "0.00";
+    return priceUSD.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  const userHasBullShares = bullShares > BigInt(0);
+  const userHasBearShares = bearShares > BigInt(0);
   const userWon = bullWins ? userHasBullShares : userHasBearShares;
   const userLost = bullWins
     ? userHasBearShares && !userHasBullShares
@@ -167,6 +184,12 @@ export default function ClaimPage() {
     snapshotTaken && userHasBearShares && totalBearShares > 0
       ? (totalBear * bearShares) / totalBearShares
       : BigInt(0);
+
+  const totalClaimableReward = userWon
+    ? bullWins
+      ? userBullReward
+      : userBearReward
+    : BigInt(0);
 
   const handleTakeSnapshot = async () => {
     setTxTitle("Taking Snapshot");
@@ -235,9 +258,10 @@ export default function ClaimPage() {
     ? String(metadata.tokenPair)
     : "Loading...";
 
+  const hasClaimableRewards = totalClaimableReward > BigInt(0);
+
   return (
     <div className="min-h-screen bg-[#FDFCF5] py-8 px-4">
-      {/* Transaction Modal */}
       <TransactionModal
         isOpen={modalOpen}
         onClose={handleModalClose}
@@ -248,7 +272,6 @@ export default function ClaimPage() {
         description={txDescription}
       />
 
-      {/* Loading Overlay */}
       {isTransactionPending && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 pointer-events-none" />
       )}
@@ -291,15 +314,13 @@ export default function ClaimPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {/* Target Price */}
                 <div className="bg-gray-50 rounded-xl p-4">
                   <p className="text-xs text-gray-600 mb-1">TARGET PRICE</p>
                   <p className="text-xl font-bold text-black">
-                    ${(targetPrice * 10 ** 8).toLocaleString()}
+                    ${formatUSDPrice(targetPriceUSD)}
                   </p>
                 </div>
 
-                {/* Final Price */}
                 <div
                   className={`rounded-xl p-4 ${
                     bullWins ? "bg-green-50" : "bg-red-50"
@@ -310,15 +331,13 @@ export default function ClaimPage() {
                   </p>
                   <p className="text-xl font-bold text-black">
                     $
-                    {(snapshotTaken
-                      ? snapshotPrice
-                      : currentPrice
-                    ).toLocaleString()}
+                    {snapshotTaken
+                      ? formatChainlinkPrice(snapshotPriceRaw)
+                      : formatChainlinkPrice(currentPriceRaw)}
                   </p>
                 </div>
               </div>
 
-              {/* Snapshot Status */}
               {!snapshotTaken && (
                 <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                   <div className="flex items-start gap-3">
@@ -347,13 +366,39 @@ export default function ClaimPage() {
                       </p>
                       <p className="text-xs text-green-800">
                         Final price recorded at $
-                        {snapshotPrice.toLocaleString()}. Claims are now enabled
-                        for winners.
+                        {formatChainlinkPrice(snapshotPriceRaw)}. Claims are now
+                        enabled for winners.
                       </p>
                     </div>
                   </div>
                 </div>
               )}
+
+              {/* Debug Info */}
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs">
+                <p className="font-bold text-blue-900 mb-2">
+                  🔍 Price Comparison Explanation
+                </p>
+                <p className="font-mono">
+                  Target: {targetPriceUSD} (${formatUSDPrice(targetPriceUSD)})
+                </p>
+                <p className="font-mono">
+                  Snapshot: {snapshotPriceRaw.toLocaleString()} ($
+                  {formatChainlinkPrice(snapshotPriceRaw)})
+                </p>
+                <p className="font-mono">
+                  Current: {currentPriceRaw.toLocaleString()} ($
+                  {formatChainlinkPrice(currentPriceRaw)})
+                </p>
+                <p className="font-mono mt-2 text-blue-700">
+                  Comparing: ${snapshotPriceUSD.toFixed(2)} &gt; $
+                  {targetPriceUSD.toFixed(2)} ={" "}
+                  {snapshotPriceUSD > targetPriceUSD ? "true" : "false"}
+                </p>
+                <p className="font-mono font-bold text-blue-900">
+                  Winner: {bullWins ? "BULL 🐂" : "BEAR 🐻"}
+                </p>
+              </div>
             </div>
 
             {/* Pool Statistics */}
@@ -364,7 +409,6 @@ export default function ClaimPage() {
               </h3>
 
               <div className="space-y-4">
-                {/* Total Pool Value */}
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                   <span className="text-sm text-gray-600">
                     Total Pool Value
@@ -374,7 +418,6 @@ export default function ClaimPage() {
                   </span>
                 </div>
 
-                {/* Bull/Bear Distribution */}
                 <div className="grid grid-cols-2 gap-3">
                   <div
                     className={`p-3 rounded-xl ${
@@ -429,7 +472,6 @@ export default function ClaimPage() {
                   </div>
                 </div>
 
-                {/* Creator Info */}
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-blue-600" />
@@ -448,6 +490,123 @@ export default function ClaimPage() {
 
           {/* Right Column - Actions */}
           <div className="space-y-5">
+            {/* ✨ BEAUTIFUL CLAIMABLE VALUE CARD - Always Shows */}
+            <div
+              className={`rounded-2xl shadow-lg border-2 p-6 relative overflow-hidden ${
+                hasClaimableRewards
+                  ? "bg-gradient-to-br from-[#BAD8B6] to-[#9CC499] border-[#8AB88A]"
+                  : "bg-gradient-to-br from-gray-100 to-gray-200 border-gray-300"
+              }`}
+            >
+              {/* Decorative circles */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12" />
+
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-3">
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      hasClaimableRewards ? "bg-white" : "bg-gray-300"
+                    }`}
+                  >
+                    {hasClaimableRewards ? (
+                      <Sparkles className="h-5 w-5 text-[#8AB88A]" />
+                    ) : (
+                      <Coins className="h-5 w-5 text-gray-500" />
+                    )}
+                  </div>
+                  <h3
+                    className={`text-lg font-bold ${
+                      hasClaimableRewards ? "text-gray-900" : "text-gray-600"
+                    }`}
+                  >
+                    Claimable Rewards
+                  </h3>
+                </div>
+
+                <div
+                  className={`backdrop-blur-sm rounded-xl p-4 mb-4 ${
+                    hasClaimableRewards ? "bg-white/90" : "bg-white/70"
+                  }`}
+                >
+                  <p
+                    className={`text-sm mb-1 ${
+                      hasClaimableRewards ? "text-gray-600" : "text-gray-500"
+                    }`}
+                  >
+                    Your {bullWins ? "BULL" : "BEAR"}{" "}
+                    {hasClaimableRewards ? "Winnings" : "Position"}
+                  </p>
+                  <p
+                    className={`text-3xl font-bold ${
+                      hasClaimableRewards ? "text-gray-900" : "text-gray-600"
+                    }`}
+                  >
+                    {Number(formatEther(totalClaimableReward)).toFixed(6)} ETH
+                  </p>
+                  {currentPriceUSD > 0 && (
+                    <p
+                      className={`text-xs mt-1 ${
+                        hasClaimableRewards ? "text-gray-500" : "text-gray-400"
+                      }`}
+                    >
+                      ≈ $
+                      {(
+                        Number(formatEther(totalClaimableReward)) *
+                        currentPriceUSD
+                      ).toFixed(2)}{" "}
+                      USD
+                    </p>
+                  )}
+                </div>
+
+                {hasClaimableRewards && snapshotTaken ? (
+                  <>
+                    <button
+                      onClick={handleClaim}
+                      disabled={isTransactionPending}
+                      className="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                    >
+                      {isTransactionPending ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Trophy className="h-5 w-5" />
+                          Claim Now
+                        </>
+                      )}
+                    </button>
+                    <p className="text-xs text-gray-700 text-center mt-2">
+                      🎉 Congratulations on your winning prediction!
+                    </p>
+                  </>
+                ) : (
+                  <div className="text-center py-2">
+                    <div className="flex items-center justify-center gap-2 text-gray-600 mb-2">
+                      <XCircle className="h-5 w-5" />
+                      <p className="text-sm font-semibold">
+                        {!snapshotTaken
+                          ? "Awaiting Snapshot"
+                          : userLost
+                          ? "No Winnings"
+                          : "No Position"}
+                      </p>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {!snapshotTaken
+                        ? "Rewards will be available after snapshot"
+                        : userLost
+                        ? "Better luck next time!"
+                        : "You didn't participate in this pool"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Snapshot Action (Creator Only) */}
             {!snapshotTaken && isCreator && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
@@ -489,14 +648,13 @@ export default function ClaimPage() {
               </div>
             )}
 
-            {/* User Position & Claim */}
+            {/* User Position */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
               <h3 className="text-lg font-bold text-black mb-4">
                 Your Position
               </h3>
 
               <div className="space-y-3">
-                {/* Bull Shares */}
                 <div
                   className={`p-3 rounded-xl ${
                     userHasBullShares && bullWins
@@ -529,7 +687,6 @@ export default function ClaimPage() {
                   )}
                 </div>
 
-                {/* Bear Shares */}
                 <div
                   className={`p-3 rounded-xl ${
                     userHasBearShares && !bullWins
@@ -563,28 +720,6 @@ export default function ClaimPage() {
                 </div>
               </div>
 
-              {/* Claim Button */}
-              {snapshotTaken && userWon && (
-                <button
-                  onClick={handleClaim}
-                  disabled={isTransactionPending}
-                  className="w-full mt-4 py-3 bg-[#BAD8B6] hover:bg-[#9CC499] text-black font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isTransactionPending ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Trophy className="h-5 w-5" />
-                      Claim {bullWins ? "BULL" : "BEAR"} Rewards
-                    </>
-                  )}
-                </button>
-              )}
-
-              {/* Status Messages */}
               {!snapshotTaken && (
                 <div className="mt-4 p-3 bg-gray-100 rounded-xl text-center">
                   <p className="text-sm text-gray-600">
@@ -610,7 +745,6 @@ export default function ClaimPage() {
               )}
             </div>
 
-            {/* Back to Pools */}
             <button
               onClick={() => router.push("/app")}
               className="w-full py-2.5 border-2 border-gray-300 rounded-xl font-semibold text-sm text-gray-700 hover:bg-gray-50 transition-all duration-200"
