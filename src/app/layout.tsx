@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     siteName: "Forecast Bid: Decentralized Prediction Pools",
     images: [
       {
-        url: "/forecast_bid.png",
+        url: "/forecast_bid.jpg",
         width: 1200,
         height: 630,
         alt: "Forecast Bid Open Graph Image",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Forecast Bid: Decentralized Prediction Pools",
     description: "Predict the future with decentralized prediction pools",
-    images: ["/forecast_bid.png"],
+    images: ["/forecast_bid.jpg"],
   },
 };
 
