@@ -117,7 +117,7 @@ const PoolCard = ({
                     <span className="font-semibold text-black">
                       $
                       {metadata?.targetPrice
-                        ? (formatUSDPrice(metadata.targetPrice))
+                        ? formatUSDPrice(metadata.targetPrice)
                         : "—"}
                     </span>
                   </p>
@@ -625,65 +625,6 @@ export const PredictionPoolsFeed = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-6">
-          {/* Search Bar */}
-          <div className="relative mb-5">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search prediction pools..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#BAD8B6] focus:border-[#BAD8B6] outline-none transition-all duration-200"
-            />
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-            {/* Status Filters */}
-            <div className="flex flex-wrap items-center gap-2">
-              {[
-                { key: "all", label: "All Pools", count: getFilterCounts.all },
-                {
-                  key: "active",
-                  label: "Active",
-                  count: getFilterCounts.active,
-                },
-                {
-                  key: "expired",
-                  label: "Expired",
-                  count: getFilterCounts.expired,
-                },
-              ].map(({ key, label, count }) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveFilter(key as any)}
-                  className={`px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                    activeFilter === key
-                      ? "bg-[#BAD8B6] text-black"
-                      : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  {label} ({count})
-                </button>
-              ))}
-            </div>
-
-            {/* NEW: Sort Dropdown */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="px-3 py-1.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#BAD8B6] focus:border-[#BAD8B6] outline-none bg-white"
-              >
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="volume">Highest TVL</option>
-                <option value="ending_soon">Ending Soon</option>
-              </select>
-            </div>
-          </div>
-        </div>
 
         {/* Invisible metadata loaders */}
         <div className="sr-only" aria-hidden>
