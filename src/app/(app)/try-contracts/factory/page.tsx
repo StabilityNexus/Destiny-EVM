@@ -399,6 +399,27 @@ export default function FactoryTryPage() {
               </div>
 
               <div className="space-y-3.5">
+                {/* Token Pair Selector - Available to All Users */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">
+                    Select Token Pair *
+                  </label>
+                  <PriceFeedSelector
+                    tokenPair={tokenPair}
+                    setTokenPair={handlePairChange}
+                    feedAddress={feedAddress}
+                    setFeedAddress={setFeedAddress}
+                  />
+                  {currentFeed && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-2">
+                      <p className="text-xs text-gray-600">
+                        <span className="font-medium">Price Feed:</span>{" "}
+                        <span className="font-mono">{currentFeed}</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 {/* Initial Liquidity Input */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">
