@@ -234,7 +234,7 @@ export default function PoolDetailPage() {
     totalPoolNumber > 0 ? (Number(totalBear) * 100) / totalPoolNumber : 50;
 
   const targetPrice = metadata?.targetPrice
-    ? Number(metadata.targetPrice) / 1e8
+    ? Number(metadata.targetPrice)
     : 0;
   const current = metadata?.latestPrice
     ? Number(metadata?.latestPrice) / 1e8
