@@ -15,16 +15,42 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Forecast Bid: Decentralized Prediction Pools",
-  description: "Predict the future with decentralized prediction pools",
+  title: "Forecast Bid × Stability Nexus — Decentralized Prediction Pools",
+  description:
+    "Predict the future with decentralized prediction pools powered by Stability Nexus.",
+  keywords: [
+    "prediction markets",
+    "decentralized betting",
+    "blockchain",
+    "Stability Nexus",
+    "Forecast Bid",
+    "Web3",
+    "smart contracts",
+    "DeFi",
+  ],
+  authors: [
+    {
+      name: "Stability Nexus",
+      url: "https://stability.nexus/",
+    },
+    {
+      name: "Forecast Bid",
+      url: "https://destiny.stability.nexus/",
+    },
+  ],
+  creator: "Stability Nexus",
+  publisher: "Stability Nexus",
+  metadataBase: new URL("https://destiny.stability.nexus/"),
+
   openGraph: {
-    title: "Forecast Bid: Decentralized Prediction Pools",
-    description: "Bet on prediction markets with real-time odds",
+    title: "Forecast Bid × Stability Nexus — Decentralized Prediction Pools",
+    description:
+      "Bet on blockchain-powered prediction markets with real-time odds and decentralized verification.",
     url: "https://destiny.stability.nexus/",
-    siteName: "Forecast Bid: Decentralized Prediction Pools",
+    siteName: "Forecast Bid",
     images: [
       {
-        url: "/forecast_bid.png",
+        url: "https://destiny.stability.nexus/forecast_bid.jpg",
         width: 1200,
         height: 630,
         alt: "Forecast Bid Open Graph Image",
@@ -33,11 +59,25 @@ export const metadata: Metadata = {
     locale: "en_US",
     type: "website",
   },
+
   twitter: {
     card: "summary_large_image",
-    title: "Forecast Bid: Decentralized Prediction Pools",
-    description: "Predict the future with decentralized prediction pools",
-    images: ["/forecast_bid.png"],
+    title: "Forecast Bid × Stability Nexus — Decentralized Prediction Pools",
+    description:
+      "Predict the future with decentralized prediction pools built on Stability Nexus.",
+    images: ["https://destiny.stability.nexus/forecast_bid.jpg"],
+    creator: "@StabilityNexus",
+    site: "@StabilityNexus",
+  },
+
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+
+  alternates: {
+    canonical: "https://destiny.stability.nexus/",
   },
 };
 

@@ -15,16 +15,6 @@ import {
   HelpCircle,
   ExternalLink,
 } from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Area,
-  AreaChart,
-} from "recharts";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 import {
@@ -39,18 +29,6 @@ import NotFoundPool from "@/components/game/NotFoundPool";
 import { TransactionModal } from "@/components/modals";
 import { formatEther } from "viem/utils";
 import Link from "next/link";
-
-// Mock data for charts
-const MOCK_PRICE_HISTORY = Array.from({ length: 24 }, (_, i) => ({
-  time: `${i}h`,
-  price: 3400 + Math.random() * 100 - 50,
-}));
-
-const MOCK_VOLUME_HISTORY = Array.from({ length: 24 }, (_, i) => ({
-  time: `${i}h`,
-  bull: Math.random() * 5,
-  bear: Math.random() * 5,
-}));
 
 // Info Tooltip Component
 const InfoTooltip = ({ text }: { text: string }) => {
@@ -256,7 +234,7 @@ export default function PoolDetailPage() {
     totalPoolNumber > 0 ? (Number(totalBear) * 100) / totalPoolNumber : 50;
 
   const targetPrice = metadata?.targetPrice
-    ? Number(metadata.targetPrice) / 1e8
+    ? Number(metadata.targetPrice)
     : 0;
   const current = metadata?.latestPrice
     ? Number(metadata?.latestPrice) / 1e8
@@ -266,9 +244,6 @@ export default function PoolDetailPage() {
     targetPrice > 0 ? ((priceChange / targetPrice) * 100).toFixed(2) : "0.00";
 
   const currentFee = Number(metadata?.currentFee) / 100;
-  const creatorFeePercent = metadata?.creatorFee
-    ? Number(metadata.creatorFee) / 100
-    : 0;
 
   const getCurrentPrice = () => {
     if (selectedSide === "bull") {
@@ -495,9 +470,9 @@ export default function PoolDetailPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Left Panel - Pool Info */}
-          <div className="lg:col-span-4 space-y-5">
+          <div className="lg:col-span-1 space-y-5">
             {/* Pool Header Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
               <div className="flex items-center justify-between mb-4">
@@ -517,7 +492,7 @@ export default function PoolDetailPage() {
                   <InfoTooltip text="The benchmark price set when the pool was created. If the final price is above this, BULL wins. If below or equal, BEAR wins." />
                 </div>
                 <p className="text-2xl font-bold text-black">
-                  ${(targetPrice * 10 ** 8).toLocaleString()}
+                  ${targetPrice.toLocaleString()}
                 </p>
               </div>
 
@@ -547,30 +522,13 @@ export default function PoolDetailPage() {
               </div>
 
               {/* Countdown */}
-              <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl mb-3">
+              <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl">
                 <div className="flex items-center gap-2 text-gray-600">
                   <Clock className="h-4 w-4" />
                   <span className="text-sm font-semibold">Time Remaining</span>
                   <InfoTooltip text="When this countdown reaches zero, the pool closes. No more trading allowed, and the final oracle price determines the winner." />
                 </div>
                 <Countdown expiry={metadata.expiry as bigint | undefined} />
-              </div>
-
-              {/* Creator Info */}
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <User className="h-4 w-4" />
-                  <span>Creator</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-sm mt-2">
-                <div className="flex items-center gap-1">
-                  <span className="text-gray-600">Creator Fee</span>
-                  <InfoTooltip text="Percentage of the total pool that goes to the pool creator when the pool ends. This incentivizes creating interesting markets." />
-                </div>
-                <span className="font-semibold text-black">
-                  {creatorFeePercent}%
-                </span>
               </div>
             </div>
 
@@ -704,109 +662,10 @@ export default function PoolDetailPage() {
             </div>
           </div>
 
-          {/* Center Panel - Charts */}
-          <div className="lg:col-span-5 space-y-5">
+          {/* Right Panel - Trading & Positions */}
+          <div className="lg:col-span-2 space-y-5">
+            {/* Trading Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-              <h2 className="text-base font-bold text-black mb-4">
-                Price Movement
-              </h2>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={MOCK_PRICE_HISTORY}>
-                  <XAxis
-                    dataKey="time"
-                    stroke="#6B7280"
-                    style={{ fontSize: 12 }}
-                  />
-                  <YAxis stroke="#6B7280" style={{ fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #E5E7EB",
-                      borderRadius: "12px",
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke="#3B82F6"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={() => targetPrice}
-                    stroke="#EF4444"
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-              <div className="flex items-center justify-center gap-4 mt-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-0.5 bg-blue-500 rounded-full" />
-                  <span className="text-gray-600">Current Price</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-0.5 bg-red-500 border-dashed" />
-                  <span className="text-gray-600">Target Price</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-              <h2 className="text-base font-bold text-black mb-4">
-                Bull/Bear Distribution
-              </h2>
-              <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={MOCK_VOLUME_HISTORY}>
-                  <XAxis
-                    dataKey="time"
-                    stroke="#6B7280"
-                    style={{ fontSize: 12 }}
-                  />
-                  <YAxis stroke="#6B7280" style={{ fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #E5E7EB",
-                      borderRadius: "12px",
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="bull"
-                    stackId="1"
-                    stroke="#10B981"
-                    fill="#10B981"
-                    fillOpacity={0.6}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="bear"
-                    stackId="1"
-                    stroke="#EF4444"
-                    fill="#EF4444"
-                    fillOpacity={0.6}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-              <div className="flex items-center justify-center gap-4 mt-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-green-500 rounded" />
-                  <span className="text-gray-600">Bull Volume</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-red-500 rounded" />
-                  <span className="text-gray-600">Bear Volume</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Panel - Trading */}
-          <div className="lg:col-span-3 space-y-5">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 sticky top-8">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-bold text-black">
                   Place Your Bet
@@ -842,115 +701,123 @@ export default function PoolDetailPage() {
                 </button>
               </div>
               <p className="text-xs text-gray-600 mb-4 bg-gray-50 p-2 rounded-lg">
-                💡 <strong>BULL</strong> = Price goes up | <strong>BEAR</strong>{" "}
-                = Price goes down or stays same
+                💡 <strong>BULL</strong> wins if price above the target |{" "}
+                <strong>BEAR</strong> wins if price below the target
               </p>
 
-              {/* Amount Input */}
-              <div className="mb-4">
-                <label className="block text-sm font-semibold text-black mb-2">
-                  Amount (ETH)
-                </label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={betAmount}
-                    onChange={(e) => setBetAmount(e.target.value)}
-                    disabled={isTransactionPending}
-                    placeholder="0.00"
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#BAD8B6] focus:border-[#BAD8B6] outline-none text-base font-mono disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                </div>
-              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  {/* Amount Input */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-black mb-2">
+                      Amount (ETH)
+                    </label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={betAmount}
+                        onChange={(e) => setBetAmount(e.target.value)}
+                        disabled={isTransactionPending}
+                        placeholder="0.00"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#BAD8B6] focus:border-[#BAD8B6] outline-none text-base font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
 
-              {/* Fee Display */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4">
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <div className="flex items-center gap-1">
-                    <span className="text-gray-700">Current Fee</span>
-                    <InfoTooltip text="Dynamic trading fee that increases as the pool approaches expiry. Fee goes to the opposite side's pool." />
-                  </div>
-                  <span className="font-semibold text-black">
-                    {currentFee.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-yellow-500 h-2 rounded-full"
-                    style={{ width: `${Math.min(currentFee, 100)}%` }}
-                  />
-                </div>
-                <p className="text-xs text-gray-600 mt-1">
-                  ⏰ Fee increases as expiry approaches
-                </p>
-              </div>
-
-              {betAmount && (
-                <div className="bg-gray-50 rounded-xl p-3 mb-4">
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-gray-600">You&apos;ll receive</span>
-                    <span className="font-bold text-black">
-                      {expectedShares.toFixed(6)} shares
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-gray-600">
-                    <span>Current price</span>
-                    <span className="font-semibold">
-                      {currentPrice.toFixed(6)} ETH/share
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-gray-600 mt-1">
-                    <span>Potential return</span>
-                    <span className="font-semibold text-green-600">
-                      {calculatePotentialReturn()} ETH
-                    </span>
+                  {/* Fee Display */}
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4">
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-700">Current Fee</span>
+                        <InfoTooltip text="Dynamic trading fee that increases as the pool approaches expiry. Fee goes to the opposite side's pool." />
+                      </div>
+                      <span className="font-semibold text-black">
+                        {currentFee.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-yellow-500 h-2 rounded-full"
+                        style={{ width: `${Math.min(currentFee, 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1">
+                      ⏰ Fee increases as expiry approaches
+                    </p>
                   </div>
                 </div>
-              )}
 
-              {/* Mint Button */}
-              <button
-                onClick={handleMint}
-                disabled={
-                  !betAmount ||
-                  parseFloat(betAmount) <= 0 ||
-                  isTransactionPending
-                }
-                className={`w-full py-2.5 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-2 mb-2.5 text-sm ${
-                  selectedSide === "bull"
-                    ? "bg-green-500 hover:bg-green-600 text-white"
-                    : "bg-red-500 hover:bg-red-600 text-white"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <CheckCircle className="h-5 w-5" />
-                {isTransactionPending
-                  ? "Processing..."
-                  : `Buy ${selectedSide.toUpperCase()} Shares`}
-              </button>
-              <p className="text-xs text-gray-500 text-center mb-3">
-                🔒 Funds locked until pool ends or you burn position
-              </p>
+                <div>
+                  {betAmount && (
+                    <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="text-gray-600">
+                          You&apos;ll receive
+                        </span>
+                        <span className="font-bold text-black">
+                          {expectedShares.toFixed(6)} shares
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-600">
+                        <span>Current price</span>
+                        <span className="font-semibold">
+                          {currentPrice.toFixed(6)} ETH/share
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-600 mt-1">
+                        <span>Potential return</span>
+                        <span className="font-semibold text-green-600">
+                          {calculatePotentialReturn()} ETH
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
-              {/* Burn Button */}
-              {((selectedSide === "bull" && bullShares > 0) ||
-                (selectedSide === "bear" && bearShares > 0)) && (
-                <>
+                  {/* Mint Button */}
                   <button
-                    onClick={handleBurn}
-                    disabled={isTransactionPending}
-                    className="w-full py-2 border-2 border-gray-300 rounded-xl font-semibold text-sm text-gray-700 hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
+                    onClick={handleMint}
+                    disabled={
+                      !betAmount ||
+                      parseFloat(betAmount) <= 0 ||
+                      isTransactionPending
+                    }
+                    className={`w-full py-2.5 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-2 mb-2.5 text-sm ${
+                      selectedSide === "bull"
+                        ? "bg-green-500 hover:bg-green-600 text-white"
+                        : "bg-red-500 hover:bg-red-600 text-white"
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
+                    <CheckCircle className="h-5 w-5" />
                     {isTransactionPending
                       ? "Processing..."
-                      : "Sell Your Shares"}
+                      : `Buy ${selectedSide.toUpperCase()} Shares`}
                   </button>
-                  <p className="text-xs text-gray-500 text-center mt-2">
-                    💸 Exit early (fees apply)
+                  <p className="text-xs text-gray-500 text-center mb-3">
+                    🔒 Funds locked until pool ends or you burn position
                   </p>
-                </>
-              )}
+
+                  {/* Burn Button */}
+                  {((selectedSide === "bull" && bullShares > 0) ||
+                    (selectedSide === "bear" && bearShares > 0)) && (
+                    <>
+                      <button
+                        onClick={handleBurn}
+                        disabled={isTransactionPending}
+                        className="w-full py-2 border-2 border-gray-300 rounded-xl font-semibold text-sm text-gray-700 hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
+                      >
+                        {isTransactionPending
+                          ? "Processing..."
+                          : "Sell Your Shares"}
+                      </button>
+                      <p className="text-xs text-gray-500 text-center mt-2">
+                        💸 Exit early (fees apply)
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Your Positions Card */}
@@ -962,7 +829,7 @@ export default function PoolDetailPage() {
                 <InfoTooltip text="Your current holdings in this pool. Win rewards based on your share percentage!" />
               </div>
 
-              <div className="space-y-2.5">
+              <div className="grid md:grid-cols-2 gap-2.5">
                 <div className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-green-600" />
