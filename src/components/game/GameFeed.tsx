@@ -17,6 +17,7 @@ import { usePoolMetadata, usePoolState } from "@/lib/web3/pool";
 import { useTimer } from "react-timer-hook";
 import { Button } from "../ui/button";
 import { formatEther } from "viem/utils";
+import { formatPrice } from "@/lib/price";
 
 const Countdown = ({ expiry }: { expiry: bigint }) => {
   const { seconds, minutes, hours, days, isRunning } = useTimer({
@@ -88,14 +89,6 @@ const PoolCard = ({
   const bearPercentage =
     totalPool > 0 ? (Number(totalBear) / totalPool) * 100 : 50;
 
-  const formatUSDPrice = (priceUSD: number) => {
-    if (!priceUSD || priceUSD === 0) return "0.00";
-    return priceUSD.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  };
-
   if (viewMode === "list") {
     return (
       <div
@@ -116,18 +109,14 @@ const PoolCard = ({
                     Target:{" "}
                     <span className="font-semibold text-black">
                       $
-                      {metadata?.targetPrice
-                        ? formatUSDPrice(metadata.targetPrice)
-                        : "—"}
+                      {formatPrice(metadata?.targetPrice)}
                     </span>
                   </p>
                   <p className="text-sm text-gray-600">
                     Latest:{" "}
                     <span className="font-semibold text-black">
                       $
-                      {metadata?.targetPrice
-                        ? (Number(metadata.latestPrice) / 1e8).toLocaleString()
-                        : "—"}
+                      {formatPrice(metadata?.latestPrice)}
                     </span>
                   </p>
                   <p className="text-sm text-gray-500">
@@ -228,9 +217,7 @@ const PoolCard = ({
             Target:{" "}
             <span className="font-semibold text-black">
               $
-              {metadata?.targetPrice
-                ? (Number(metadata.targetPrice) / 1e8).toLocaleString()
-                : "—"}
+              {formatPrice(metadata?.targetPrice)}
             </span>
           </p>
         </div>

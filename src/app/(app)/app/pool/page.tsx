@@ -28,6 +28,7 @@ import {
 import NotFoundPool from "@/components/game/NotFoundPool";
 import { TransactionModal } from "@/components/modals";
 import { formatEther } from "viem/utils";
+import { formatPrice, priceToNumber } from "@/lib/price";
 import Link from "next/link";
 
 // Info Tooltip Component
@@ -233,12 +234,8 @@ export default function PoolDetailPage() {
   const bearPercentage =
     totalPoolNumber > 0 ? (Number(totalBear) * 100) / totalPoolNumber : 50;
 
-  const targetPrice = metadata?.targetPrice
-    ? Number(metadata.targetPrice)
-    : 0;
-  const current = metadata?.latestPrice
-    ? Number(metadata?.latestPrice) / 1e8
-    : 0;
+  const targetPrice = priceToNumber(metadata?.targetPrice);
+  const current = priceToNumber(metadata?.latestPrice);
   const priceChange = current - targetPrice;
   const priceChangePercent =
     targetPrice > 0 ? ((priceChange / targetPrice) * 100).toFixed(2) : "0.00";
@@ -492,7 +489,7 @@ export default function PoolDetailPage() {
                   <InfoTooltip text="The benchmark price set when the pool was created. If the final price is above this, BULL wins. If below or equal, BEAR wins." />
                 </div>
                 <p className="text-2xl font-bold text-black">
-                  ${targetPrice.toLocaleString()}
+                  ${formatPrice(metadata.targetPrice)}
                 </p>
               </div>
 
@@ -504,7 +501,7 @@ export default function PoolDetailPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <p className="text-xl font-bold text-black">
-                    ${current.toLocaleString()}
+                    ${formatPrice(metadata.latestPrice)}
                   </p>
                   <div
                     className={`flex items-center gap-1 text-sm font-semibold ${
