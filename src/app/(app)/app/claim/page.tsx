@@ -26,6 +26,7 @@ import {
 import NotFoundPool from "@/components/game/NotFoundPool";
 import { TransactionModal } from "@/components/modals";
 import { formatEther } from "viem/utils";
+import { priceToNumber } from "@/lib/price";
 
 export default function ClaimPage() {
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
@@ -132,30 +133,13 @@ export default function ClaimPage() {
       ? userAddress.toLowerCase() === metadata.creator.toLowerCase()
       : false;
 
-  const targetPriceUSD = metadata?.targetPrice
-    ? Number(metadata.targetPrice)
-    : 0;
-  const snapshotPriceRaw = metadata?.snapshotPrice
-    ? Number(metadata.snapshotPrice)
-    : 0;
-  const currentPriceRaw = metadata?.latestPrice
-    ? Number(metadata.latestPrice)
-    : 0;
-
-  const snapshotPriceUSD = snapshotPriceRaw / 1e8;
-  const currentPriceUSD = currentPriceRaw / 1e8;
+  const targetPriceUSD = priceToNumber(metadata?.targetPrice);
+  const snapshotPriceUSD = priceToNumber(metadata?.snapshotPrice);
+  const currentPriceUSD = priceToNumber(metadata?.latestPrice);
 
   const bullWins = snapshotTaken
     ? snapshotPriceUSD > targetPriceUSD
     : currentPriceUSD > targetPriceUSD;
-
-  const formatChainlinkPrice = (priceRaw: number) => {
-    if (!priceRaw || priceRaw === 0) return "0.00";
-    return (priceRaw / 1e8).toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  };
 
   const formatUSDPrice = (priceUSD: number) => {
     if (!priceUSD || priceUSD === 0) return "0.00";
@@ -332,8 +316,8 @@ export default function ClaimPage() {
                   <p className="text-xl font-bold text-black">
                     $
                     {snapshotTaken
-                      ? formatChainlinkPrice(snapshotPriceRaw)
-                      : formatChainlinkPrice(currentPriceRaw)}
+                      ? formatUSDPrice(snapshotPriceUSD)
+                      : formatUSDPrice(currentPriceUSD)}
                   </p>
                 </div>
               </div>
@@ -366,7 +350,7 @@ export default function ClaimPage() {
                       </p>
                       <p className="text-xs text-green-800">
                         Final price recorded at $
-                        {formatChainlinkPrice(snapshotPriceRaw)}. Claims are now
+                        {formatUSDPrice(snapshotPriceUSD)}. Claims are now
                         enabled for winners.
                       </p>
                     </div>
@@ -383,12 +367,12 @@ export default function ClaimPage() {
                   Target: {targetPriceUSD} (${formatUSDPrice(targetPriceUSD)})
                 </p>
                 <p className="font-mono">
-                  Snapshot: {snapshotPriceRaw.toLocaleString()} ($
-                  {formatChainlinkPrice(snapshotPriceRaw)})
+                  Snapshot: {snapshotPriceUSD.toLocaleString()} ($
+                  {formatUSDPrice(snapshotPriceUSD)})
                 </p>
                 <p className="font-mono">
-                  Current: {currentPriceRaw.toLocaleString()} ($
-                  {formatChainlinkPrice(currentPriceRaw)})
+                  Current: {currentPriceUSD.toLocaleString()} ($
+                  {formatUSDPrice(currentPriceUSD)})
                 </p>
                 <p className="font-mono mt-2 text-blue-700">
                   Comparing: ${snapshotPriceUSD.toFixed(2)} &gt; $

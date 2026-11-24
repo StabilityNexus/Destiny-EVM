@@ -18,6 +18,7 @@ import { PRICE_FEEDS } from "@/lib/contracts/feeds";
 import { FACTORY_ADDRESSES } from "@/lib/contracts/addresses";
 import PriceFeedSelector from "@/components/game/PriceFeedSelector";
 import FACTORY_ABI from "@/lib/contracts/abi/PredictionFactory.json";
+import { parsePrice } from "@/lib/price";
 
 // Supported chains
 const SUPPORTED_CHAINS = [11155111, 80002];
@@ -185,8 +186,16 @@ export default function FactoryTryPage() {
   };
 
   const isLiquidityValid = initialLiquidity && Number(initialLiquidity) > 0;
+  const isTargetPriceValid =
+    targetPrice.trim() !== "" &&
+    Number.isFinite(Number(targetPrice)) &&
+    Number(targetPrice) > 0;
   const isFormValid =
-    tokenPair && targetPrice && expiry && creatorFee !== "" && isLiquidityValid;
+    tokenPair &&
+    isTargetPriceValid &&
+    expiry &&
+    creatorFee !== "" &&
+    isLiquidityValid;
   const isFeedFormValid = tokenPair && feedAddress;
   const isTransactionPending = txStatus === "pending";
   const isChainSupported = SUPPORTED_CHAINS.includes(chainId);
@@ -452,7 +461,7 @@ export default function FactoryTryPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">
-                      Target Price
+                      Target Price (USD)
                     </label>
                     <input
                       className="w-full px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -570,7 +579,7 @@ export default function FactoryTryPage() {
                       () =>
                         createPredictionPool(
                           tokenPair,
-                          BigInt(targetPrice),
+                          parsePrice(targetPrice),
                           BigInt(expiry),
                           BigInt(rampStart || expiry),
                           BigInt(Math.floor(Number(creatorFee) * 100)),
