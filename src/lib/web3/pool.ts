@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useReadContract, useWriteContract, useAccount } from "wagmi";
 import abi from "@/lib/contracts/abi/PredictionPool.json" assert { type: "json" };
 import { parseEther } from "viem/utils";
@@ -85,30 +86,37 @@ export function usePoolMetadata(address?: `0x${string}`) {
     functionName: "createdAt",
   });
 
-  return {
-    metadata:
-      tokenPairQuery.data &&
-        targetPriceQuery.data &&
-        expiryQuery.data &&
-        rampStartQuery.data &&
-        creatorFeeQuery.data &&
-        latestPriceQuery.data
-        ? {
-          tokenPair: tokenPairQuery.data,
-          targetPrice: targetPriceQuery.data,
-          expiry: expiryQuery.data,
-          rampStart: rampStartQuery.data,
-          creatorFee: creatorFeeQuery.data,
-          latestPrice: latestPriceQuery.data,
-          currentFee: currentFeeQuery.data,
-          snapshotPrice: snapshotPriceQuery.data,
-          snapshotTaken: snapshotTakenQuery.data,
-          initialized: initializedQuery.data,
-          creator: creatorQuery.data as `0x${string}` | undefined,
-          protocolFeeRecipient: protocolFeeRecipientQuery.data as `0x${string}` | undefined,
-          createdAt: createdAtQuery.data,
+  const { data: tokenPair } = tokenPairQuery;
+  const { data: targetPrice } = targetPriceQuery;
+  const { data: expiry } = expiryQuery;
+  const { data: rampStart } = rampStartQuery;
+  const { data: creatorFee } = creatorFeeQuery;
+  const { data: latestPrice } = latestPriceQuery;
+  const { data: currentFee } = currentFeeQuery;
+  const { data: snapshotPrice } = snapshotPriceQuery;
+  const { data: snapshotTaken } = snapshotTakenQuery;
+  const { data: initialized } = initializedQuery;
+  const creator = creatorQuery.data as `0x${string}` | undefined;
+  const protocolFeeRecipient = protocolFeeRecipientQuery.data as `0x${string}` | undefined;
+  const { data: createdAt } = createdAtQuery;
+
+  const metadata = useMemo(
+    () => tokenPair && targetPrice && expiry && rampStart && creatorFee && latestPrice
+      ? {
+          tokenPair, targetPrice, expiry, rampStart, creatorFee, latestPrice,
+          currentFee, snapshotPrice, snapshotTaken, initialized, creator,
+          protocolFeeRecipient, createdAt,
         }
-        : null,
+      : null,
+    [
+      tokenPair, targetPrice, expiry, rampStart, creatorFee, latestPrice,
+      currentFee, snapshotPrice, snapshotTaken, initialized, creator,
+      protocolFeeRecipient, createdAt,
+    ]
+  );
+
+  return {
+    metadata,
     refetch: async () => {
       await tokenPairQuery.refetch();
       await targetPriceQuery.refetch();
@@ -226,26 +234,17 @@ export function usePoolState(address?: `0x${string}`) {
     functionName: "getPoolState",
   });
 
-  if (!poolStateQuery.data) {
-    return {
-      state: null,
-      isLoading: poolStateQuery.isLoading,
-      refetch: poolStateQuery.refetch,
-    };
-  }
-
-  const [bullReserve, bearReserve, bullPrice, bearPrice, currentFee, tvl] =
-    poolStateQuery.data as [bigint, bigint, bigint, bigint, bigint, bigint];
+  const data = poolStateQuery.data as
+    | readonly [bigint, bigint, bigint, bigint, bigint, bigint]
+    | undefined;
+  const state = useMemo(() => {
+    if (!data) return null;
+    const [bullReserve, bearReserve, bullPrice, bearPrice, currentFee, tvl] = data;
+    return { bullReserve, bearReserve, bullPrice, bearPrice, currentFee, tvl };
+  }, [data]);
 
   return {
-    state: {
-      bullReserve,
-      bearReserve,
-      bullPrice,
-      bearPrice,
-      currentFee,
-      tvl,
-    },
+    state,
     isLoading: poolStateQuery.isLoading,
     refetch: poolStateQuery.refetch,
   };
