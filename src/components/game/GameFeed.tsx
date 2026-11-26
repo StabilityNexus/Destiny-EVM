@@ -324,17 +324,13 @@ const MetadataLoader = ({
     if (metadata) {
       onMetadataUpdate(address, metadata);
     }
-  }, [address, metadata ? JSON.stringify(metadata) : null, onMetadataUpdate]);
+  }, [address, metadata, onMetadataUpdate]);
 
   useEffect(() => {
     if (poolState) {
       onPoolStateUpdate(address, poolState);
     }
-  }, [
-    address,
-    poolState ? JSON.stringify(poolState) : null,
-    onPoolStateUpdate,
-  ]);
+  }, [address, poolState, onPoolStateUpdate]);
 
   return null;
 };
@@ -358,7 +354,7 @@ export const PredictionPoolsFeed = () => {
   const handleMetadataUpdate = useCallback((address: string, metadata: any) => {
     setMetadataMap((prev) => {
       const prevMetadata = prev[address];
-      if (JSON.stringify(prevMetadata) === JSON.stringify(metadata)) {
+      if (prevMetadata === metadata) {
         return prev;
       }
       return { ...prev, [address]: metadata };
@@ -369,7 +365,7 @@ export const PredictionPoolsFeed = () => {
     (address: string, poolState: any) => {
       setPoolStateMap((prev) => {
         const prevState = prev[address];
-        if (JSON.stringify(prevState) === JSON.stringify(poolState)) {
+        if (prevState === poolState) {
           return prev;
         }
         return { ...prev, [address]: poolState };
